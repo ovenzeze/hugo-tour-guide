@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="256" cy="256" r="248" fill="#5BBAD5"/>
+  
+  <!-- 卡通人物脸部 -->
+  <circle cx="256" cy="240" r="160" fill="#FFD7B5"/>
+  
+  <!-- 眼睛 -->
+  <ellipse cx="196" cy="200" rx="24" ry="28" fill="white"/>
+  <ellipse cx="316" cy="200" rx="24" ry="28" fill="white"/>
+  
+  <!-- 眼珠 -->
+  <circle cx="196" cy="200" r="12" fill="#333333"/>
+  <circle cx="316" cy="200" r="12" fill="#333333"/>
+  
+  <!-- 眼睛高光 -->
+  <circle cx="190" cy="194" r="4" fill="white"/>
+  <circle cx="310" cy="194" r="4" fill="white"/>
+  
+  <!-- 微笑 -->
+  <path d="M196 280C226.928 320 284.978 320 316 280" stroke="#333333" stroke-width="8" stroke-linecap="round"/>
+  
+  <!-- 导游帽子 -->
+  <path d="M100 180C140 120 372 120 412 180L380 120H132L100 180Z" fill="#3A7CA5"/>
+  <rect x="132" y="120" width="248" height="30" fill="#3A7CA5"/>
+  <ellipse cx="256" cy="120" rx="124" ry="20" fill="#3A7CA5"/>
+  
+  <!-- 导游帽标志 -->
+  <circle cx="256" cy="140" r="15" fill="#FFD700"/>
+  <text x="256" y="145" font-family="Arial" font-size="20" text-anchor="middle" fill="#3A7CA5">H</text>
+</svg>
