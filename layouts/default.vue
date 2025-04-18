@@ -1,45 +1,7 @@
 <template>
   <div class="h-dvh max-h-dvh flex flex-col relative">
-    <!-- 顶部导航栏 -->
-    <header class="bg-white border-b shadow-sm h-16 shrink-0">
-      <div class="container mx-auto px-4 h-full flex justify-between items-center">
-        <h1 class="text-xl font-bold text-blue-600">AI Tour Guide</h1>
-        <button class="md:hidden p-2" @click="isMobileMenuOpen = !isMobileMenuOpen">
-          <Icon name="ph:menu" class="w-6 h-6" />
-        </button>
-        <nav class="hidden md:block">
-          <ul class="flex space-x-6">
-            <li v-for="link in navLinks" :key="link.path">
-              <NuxtLink 
-                :to="link.path" 
-                class="hover:text-blue-600"
-                :class="{ 'text-blue-600': $route.path === link.path }"
-              >
-                {{ link.label }}
-              </NuxtLink>
-            </li>
-          </ul>
-        </nav>
-      </div>
-      
-      <!-- 移动端菜单 -->
-      <Transition name="slide-down">
-        <div v-if="isMobileMenuOpen" class="md:hidden bg-white border-t">
-          <ul class="flex flex-col px-4 py-2 space-y-2">
-            <li v-for="link in navLinks" :key="link.path">
-              <NuxtLink 
-                :to="link.path" 
-                class="block py-2 hover:text-blue-600"
-                :class="{ 'text-blue-600': $route.path === link.path }"
-                @click="isMobileMenuOpen = false"
-              >
-                {{ link.label }}
-              </NuxtLink>
-            </li>
-          </ul>
-        </div>
-      </Transition>
-    </header>
+    <!-- 动态导航栏 -->
+    <DynamicHeader />
     
     <!-- 主要内容区 -->
     <main class="flex-1 overflow-y-auto pt-4 pb-[calc(64px+1rem)] md:pb-4">
@@ -67,7 +29,8 @@
 </template>
 
 <script setup lang="ts">
-const isMobileMenuOpen = ref(false)
+import { ref, computed } from 'vue'
+import DynamicHeader from '~/components/layout/DynamicHeader.vue'
 
 const navLinks = [
   { path: '/', label: 'Home', icon: 'ph:house' },
@@ -83,15 +46,3 @@ const bottomNavLinks = computed(() => {
   )
 })
 </script>
-
-<style>
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.3s ease;
-}
-.slide-down-enter-from,
-.slide-down-leave-to {
-  transform: translateY(-20px);
-  opacity: 0;
-}
-</style>
