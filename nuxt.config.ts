@@ -52,11 +52,19 @@ export default defineNuxtConfig({
     "@nuxtjs/google-fonts",
     '@nuxt/icon',
     '@vueuse/motion/nuxt',
-    '@vite-pwa/nuxt'
+    '@vite-pwa/nuxt',
+    '@nuxtjs/leaflet',
+    '@nuxt/content'
   ],
   shadcn: {
     prefix: '',
     componentDir: './components/ui'
+  },
+  content: {
+    documentDriven: true,
+    highlight: {
+      theme: 'github-light'
+    }
   },
   pwa: {
     registerType: 'autoUpdate',

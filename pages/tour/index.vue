@@ -47,7 +47,11 @@
         :enter="{ opacity: 1, scale: 1, transition: { delay: 0.2, duration: 0.5 } }"
       >
         <!-- 使用我们创建的地图组件 -->
-        <MuseumMap :current-floor="currentFloor" />
+        <MuseumMap 
+          ref="mapRef"
+          :current-floor="currentFloor" 
+          @select-exhibit="onExhibitSelected"
+        />
       </div>
       
       <div class="flex justify-between">
@@ -135,6 +139,7 @@
             <button
               class="text-blue-600 text-sm hover:underline"
               v-motion:tap="{ scale: 0.95 }"
+              @click.stop="showExhibitOnMap(item)"
             >
               Show
             </button>
@@ -291,6 +296,22 @@ import AskGuideButton from "~/components/guide/AskGuideButton.vue"
 import GuideDialog from "~/components/guide/GuideDialog.vue"
 import MuseumMap from "~/components/tour/MuseumMap.vue"
 
+// 定义地图组件类型
+interface MapComponent {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  highlightExhibit: (id: number) => void;
+}
+
+// 定义展品项目类型
+interface ExhibitItem {
+  id: number;
+  name: string;
+  location: string;
+  floor: number;
+  highlight: boolean;
+}
+
 // 初始化 chatStore
 const chatStore = useChatStore()
 
@@ -299,18 +320,18 @@ const showGuideDialog = ref(false)
 
 // 地图相关状态
 const currentFloor = ref(1)
-const zoomLevel = ref(1)
+const mapRef = ref<MapComponent | null>(null)
 
 // 推荐路线数据
-const routeItems = ref([
-  { name: 'Egyptian Collection', location: 'Floor 1, Room 4', floor: 1, highlight: false },
-  { name: 'Greek Sculptures', location: 'Floor 1, Room 7', floor: 1, highlight: false },
-  { name: 'Renaissance Paintings', location: 'Floor 2, Room 3', floor: 2, highlight: false },
-  { name: 'Modern Art Gallery', location: 'Floor 2, Room 8', floor: 2, highlight: false }
+const routeItems = ref<ExhibitItem[]>([
+  { id: 1, name: 'Egyptian Collection', location: 'Floor 1, Room 4', floor: 1, highlight: false },
+  { id: 2, name: 'Greek Sculptures', location: 'Floor 1, Room 7', floor: 1, highlight: false },
+  { id: 3, name: 'Renaissance Paintings', location: 'Floor 2, Room 3', floor: 2, highlight: false },
+  { id: 4, name: 'Modern Art Gallery', location: 'Floor 2, Room 8', floor: 2, highlight: false }
 ])
 
 // 当前高亮的展品
-const highlightedExhibit = ref(null)
+const highlightedExhibit = ref<ExhibitItem | null>(null)
 
 // 处理 Ask Guide 按钮点击
 function openGuideDialog() {
@@ -326,19 +347,21 @@ function handleSendMessage(content: string) {
 
 // 地图缩放功能
 function zoomIn() {
-  zoomLevel.value = Math.min(zoomLevel.value + 0.2, 2)
-  // 在实际应用中，这里应该调用地图组件的缩放方法
-  console.log('Zoom in:', zoomLevel.value)
+  if (mapRef.value) {
+    mapRef.value.zoomIn()
+    console.log('Zoom in')
+  }
 }
 
 function zoomOut() {
-  zoomLevel.value = Math.max(zoomLevel.value - 0.2, 0.5)
-  // 在实际应用中，这里应该调用地图组件的缩放方法
-  console.log('Zoom out:', zoomLevel.value)
+  if (mapRef.value) {
+    mapRef.value.zoomOut()
+    console.log('Zoom out')
+  }
 }
 
 // 高亮展品
-function highlightExhibit(item: any) {
+function highlightExhibit(item: ExhibitItem) {
   // 重置所有展品的高亮状态
   routeItems.value.forEach(exhibit => exhibit.highlight = false)
   
@@ -349,7 +372,31 @@ function highlightExhibit(item: any) {
   // 切换到展品所在的楼层
   currentFloor.value = item.floor
   
-  // 在实际应用中，这里应该调用地图组件的方法来高亮显示展品位置
-  console.log('Highlighting exhibit:', item.name, 'on floor', item.floor)
+  // 调用地图组件的方法来高亮显示展品位置
+  if (mapRef.value) {
+    mapRef.value.highlightExhibit(item.id)
+    console.log('Highlighting exhibit:', item.name, 'on floor', item.floor)
+  }
+}
+
+// 在地图上显示展品
+function showExhibitOnMap(item: ExhibitItem) {
+  // 切换到展品所在的楼层
+  currentFloor.value = item.floor
+  
+  // 调用地图组件的方法来高亮显示展品位置
+  if (mapRef.value) {
+    mapRef.value.highlightExhibit(item.id)
+  }
+}
+
+// 处理地图组件选择展品事件
+function onExhibitSelected(exhibit: any) {
+  // 找到对应的路线项目
+  const routeItem = routeItems.value.find(item => item.id === exhibit.id)
+  if (routeItem) {
+    // 高亮显示路线项目
+    highlightExhibit(routeItem)
+  }
 }
 </script>
