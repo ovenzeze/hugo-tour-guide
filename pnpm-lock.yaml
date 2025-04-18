@@ -78,9 +78,6 @@ importers:
         specifier: ^3.24.3
         version: 3.24.3
     devDependencies:
-      '@iconify-json/heroicons':
-        specifier: github:nuxt/icon
-        version: '@nuxt/icon@https://codeload.github.com/nuxt/icon/tar.gz/b94a067d427083f243cabe89395ab6bc9e2a2d0b(magicast@0.3.5)(vite@6.3.1(@types/node@22.14.1)(jiti@2.4.2)(lightningcss@1.29.2)(terser@5.39.0)(yaml@2.7.1))(vue@3.5.13(typescript@5.8.3))'
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
@@ -687,10 +684,6 @@ packages:
 
   '@nuxt/icon@1.12.0':
     resolution: {integrity: sha512-aAEq4NQzRXmfR6ajLvA8tuD/5pxaOg/3VzIKqQS68R3D2fGD1pAitTrJAm4A3RX2TnrRMSoYoNw34IyVE5w1dg==}
-
-  '@nuxt/icon@https://codeload.github.com/nuxt/icon/tar.gz/b94a067d427083f243cabe89395ab6bc9e2a2d0b':
-    resolution: {tarball: https://codeload.github.com/nuxt/icon/tar.gz/b94a067d427083f243cabe89395ab6bc9e2a2d0b}
-    version: 1.12.0
 
   '@nuxt/kit@3.16.2':
     resolution: {integrity: sha512-K1SAUo2vweTfudKZzjKsZ5YJoxPLTspR5qz5+G61xtZreLpsdpDYfBseqsIAl5VFLJuszeRpWQ01jP9LfQ6Ksw==}
@@ -4842,28 +4835,6 @@ snapshots:
       - vue
 
   '@nuxt/icon@1.12.0(magicast@0.3.5)(vite@6.3.1(@types/node@22.14.1)(jiti@2.4.2)(lightningcss@1.29.2)(terser@5.39.0)(yaml@2.7.1))(vue@3.5.13(typescript@5.8.3))':
-    dependencies:
-      '@iconify/collections': 1.0.539
-      '@iconify/types': 2.0.0
-      '@iconify/utils': 2.3.0
-      '@iconify/vue': 4.3.0(vue@3.5.13(typescript@5.8.3))
-      '@nuxt/devtools-kit': 2.4.0(magicast@0.3.5)(vite@6.3.1(@types/node@22.14.1)(jiti@2.4.2)(lightningcss@1.29.2)(terser@5.39.0)(yaml@2.7.1))
-      '@nuxt/kit': 3.16.2(magicast@0.3.5)
-      consola: 3.4.2
-      local-pkg: 1.1.1
-      mlly: 1.7.4
-      ohash: 2.0.11
-      pathe: 2.0.3
-      picomatch: 4.0.2
-      std-env: 3.9.0
-      tinyglobby: 0.2.12
-    transitivePeerDependencies:
-      - magicast
-      - supports-color
-      - vite
-      - vue
-
-  '@nuxt/icon@https://codeload.github.com/nuxt/icon/tar.gz/b94a067d427083f243cabe89395ab6bc9e2a2d0b(magicast@0.3.5)(vite@6.3.1(@types/node@22.14.1)(jiti@2.4.2)(lightningcss@1.29.2)(terser@5.39.0)(yaml@2.7.1))(vue@3.5.13(typescript@5.8.3))':
     dependencies:
       '@iconify/collections': 1.0.539
       '@iconify/types': 2.0.0

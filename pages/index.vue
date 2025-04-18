@@ -101,7 +101,6 @@
 import { Icon } from '#components'
 import { computed, onMounted, ref } from 'vue'
 import { useMotion } from '@vueuse/motion'
-import { useChatStore } from '~/stores/chatStore'
 import { Alert } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -165,24 +164,6 @@ const filteredList = computed(() => {
 })
 function toggleFavorite(item: TourItem) {
   item.favorite = !item.favorite
-}
-
-// 初始化 chatStore
-const chatStore = useChatStore();
-
-// 对话框状态
-const showGuideDialog = ref(false);
-
-// 处理 Ask Guide 按钮点击
-function openGuideDialog() {
-  showGuideDialog.value = true;
-  chatStore.initialize?.();
-}
-
-// 处理消息发送
-function handleSendMessage(content: string) {
-  if (!content.trim()) return;
-  chatStore.sendMessage(content);
 }
 
 // 导航到详情页
