@@ -101,9 +101,39 @@
         </div>
       </div>
     </div>
+    
+    <!-- Ask Guide 按钮 -->
+    <AskGuideButton @click="openGuideDialog" />
+    
+    <!-- Guide 对话框 -->
+    <GuideDialog
+      v-model="showGuideDialog"
+      @send="handleSendMessage"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-// Tour page logic will be implemented here
+import { ref } from 'vue'
+import { useChatStore } from '~/stores/chatStore'
+import AskGuideButton from "~/components/guide/AskGuideButton.vue"
+import GuideDialog from "~/components/guide/GuideDialog.vue"
+
+// 初始化 chatStore
+const chatStore = useChatStore()
+
+// 对话框状态
+const showGuideDialog = ref(false)
+
+// 处理 Ask Guide 按钮点击
+function openGuideDialog() {
+  showGuideDialog.value = true
+  chatStore.initialize()
+}
+
+// 处理消息发送
+function handleSendMessage(content: string) {
+  if (!content.trim()) return
+  chatStore.sendMessage(content)
+}
 </script>

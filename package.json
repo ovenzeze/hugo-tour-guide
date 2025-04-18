@@ -35,7 +35,6 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
-    "@iconify-json/heroicons": "github:nuxt/icon",
     "typescript": "^5.8.3"
   }
 }

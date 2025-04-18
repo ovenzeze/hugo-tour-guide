@@ -94,20 +94,10 @@
         No items found, try adjusting your filters.
       </Alert>
     </div>
-    <!-- Ask Guide 按钮 -->
-    <AskGuideButton @click="openGuideDialog" />
-    
-    <!-- Guide 对话框 -->
-    <GuideDialog
-      v-model="showGuideDialog"
-      @send="handleSendMessage"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import AskGuideButton from "~/components/guide/AskGuideButton.vue";
-import GuideDialog from "~/components/guide/GuideDialog.vue";
 import { Icon } from '#components'
 import { computed, onMounted, ref } from 'vue'
 import { useMotion } from '@vueuse/motion'
