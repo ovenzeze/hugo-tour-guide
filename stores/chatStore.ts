@@ -2,6 +2,7 @@
 // Note: This is a placeholder implementation
 
 import { defineStore } from 'pinia'
+import { ref, computed, onMounted } from 'vue'
 import type { ChatMessage } from '~/types'
 import { sendChatMessage } from '~/utils/api'
 import { generateId } from '~/utils/helpers'
@@ -14,7 +15,7 @@ export const useChatStore = defineStore('chat', () => {
   const transcript = ref('')
   
   // Initial welcome message
-  if (process.client) {
+  if (import.meta.client) {
     // Only add welcome message on client-side to avoid hydration issues
     onMounted(() => {
       if (messages.value.length === 0) {
@@ -37,6 +38,18 @@ export const useChatStore = defineStore('chat', () => {
   })
   
   // Actions
+  function initialize() {
+    // Only add welcome message if chat is empty
+    if (messages.value.length === 0) {
+      messages.value.push({
+        id: generateId(),
+        sender: 'ai',
+        content: 'Hello! I\'m Lisa, your AI museum guide. How can I help you today?',
+        timestamp: new Date()
+      })
+    }
+  }
+  
   async function sendMessage(content: string) {
     if (!content.trim()) return
     
@@ -123,6 +136,7 @@ export const useChatStore = defineStore('chat', () => {
     sendMessage,
     startListening,
     stopListening,
-    clearChat
+    clearChat,
+    initialize
   }
 })

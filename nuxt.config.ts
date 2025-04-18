@@ -30,6 +30,10 @@ export default defineNuxtConfig({
       viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimum-scale=1'
     }
   },
+  plugins: [
+    '~/plugins/motion.client',
+    '~/plugins/pinia'
+  ],
   modules: ['shadcn-nuxt', "@nuxtjs/google-fonts", '@nuxt/icon', '@vueuse/motion/nuxt'],
   shadcn: {
     prefix: '',

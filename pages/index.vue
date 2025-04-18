@@ -1,7 +1,12 @@
 <template>
   <div class="container mx-auto p-4">
     <!-- 筛选栏 -->
-    <div class="flex flex-wrap gap-3 items-center mb-4">
+    <div
+      class="flex flex-wrap gap-3 items-center mb-4"
+      v-motion
+      :initial="{ opacity: 0, y: -20 }"
+      :enter="{ opacity: 1, y: 0, transition: { duration: 0.4 } }"
+    >
       <Combobox v-model="selectedType" :options="typeOptions" placeholder="Type" class="w-32" />
       <Combobox v-model="selectedRegion" :options="regionOptions" placeholder="Region" class="w-32" />
       <Select v-model="selectedTime" :options="timeOptions" placeholder="Open Time" class="w-32" />
@@ -11,12 +16,38 @@
       </div>
     </div>
     <!-- 列表区 -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-5">
-      <Card v-for="item in filteredList" :key="item.id" class="relative group overflow-hidden shadow transition-shadow hover:shadow-xl rounded-2xl flex flex-col h-full pt-0 pb-3 gap-0">
+    <TransitionGroup
+      name="list"
+      tag="div"
+      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-5"
+    >
+      <Card
+        v-for="(item, index) in filteredList"
+        :key="item.id"
+        v-motion
+        :initial="{ opacity: 0, y: 50 }"
+        :enter="{
+          opacity: 1,
+          y: 0,
+          transition: {
+            delay: 0.3 + index * 0.05,
+            duration: 0.6
+          }
+        }"
+        class="relative group overflow-hidden shadow transition-all duration-300 hover:shadow-xl hover:scale-[1.02] rounded-2xl flex flex-col h-full pt-0 pb-3 gap-0 cursor-pointer"
+        @click="navigateToDetail(item)"
+      >
         <CardContent class="p-0">
           <div class="relative">
             <img :src="item.cover" class="w-full h-40 object-cover rounded-t-2xl transition-all duration-200" alt="cover" />
-            <Button variant="ghost" size="icon" class="absolute top-3 right-3 rounded-full bg-white/80 hover:bg-white" @click.stop="toggleFavorite(item)" :aria-label="item.favorite ? 'Unfavorite' : 'Favorite'">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="absolute top-3 right-3 rounded-full bg-white/80 hover:bg-white"
+              @click.stop="toggleFavorite(item)"
+              :aria-label="item.favorite ? 'Unfavorite' : 'Favorite'"
+              v-motion:click="{ scale: [1, 1.2, 1], transition: { duration: 0.3 } }"
+            >
               <span class="sr-only">Favorite</span>
               <div class="group relative">
                 <Icon :name="item.favorite ? 'ph:heart-fill' : 'ph:heart'" class="text-red-900 transition-transform group-hover:scale-110" />
@@ -50,19 +81,37 @@
         </CardFooter>
         
       </Card>
-    </div>
+    </TransitionGroup>
     <!-- 空状态 -->
-    <div v-if="filteredList.length === 0" class="flex flex-col items-center justify-center h-60">
+    <div
+      v-if="filteredList.length === 0"
+      class="flex flex-col items-center justify-center h-60"
+      v-motion
+      :initial="{ opacity: 0 }"
+      :enter="{ opacity: 1, transition: { delay: 0.5 } }"
+    >
       <Alert variant="default" class="mt-10 text-center">
         No items found, try adjusting your filters.
       </Alert>
     </div>
+    <!-- Ask Guide 按钮 -->
+    <AskGuideButton @click="openGuideDialog" />
+    
+    <!-- Guide 对话框 -->
+    <GuideDialog
+      v-model="showGuideDialog"
+      @send="handleSendMessage"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import AskGuideButton from "~/components/guide/AskGuideButton.vue";
+import GuideDialog from "~/components/guide/GuideDialog.vue";
 import { Icon } from '#components'
 import { computed, onMounted, ref } from 'vue'
+import { useMotion } from '@vueuse/motion'
+import { useChatStore } from '~/stores/chatStore'
 import { Alert } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -127,4 +176,45 @@ const filteredList = computed(() => {
 function toggleFavorite(item: TourItem) {
   item.favorite = !item.favorite
 }
+
+// 初始化 chatStore
+const chatStore = useChatStore();
+
+// 对话框状态
+const showGuideDialog = ref(false);
+
+// 处理 Ask Guide 按钮点击
+function openGuideDialog() {
+  showGuideDialog.value = true;
+  chatStore.initialize?.();
+}
+
+// 处理消息发送
+function handleSendMessage(content: string) {
+  if (!content.trim()) return;
+  chatStore.sendMessage(content);
+}
+
+// 导航到详情页
+function navigateToDetail(item: TourItem) {
+  navigateTo(`/tour/${item.id}`);
+}
 </script>
+
+<style scoped>
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
+}
+.list-enter-from {
+  opacity: 0;
+  transform: translateY(30px);
+}
+.list-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.list-move {
+  transition: transform 0.5s ease;
+}
+</style>
