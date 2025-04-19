@@ -65,9 +65,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import * as L from 'leaflet'; // 使用命名导入
-import type { Map as LeafletMap, LatLngExpression, Layer, Marker } from 'leaflet';
+import { computed, ref, watch, onMounted } from 'vue';
+import type { Map as LeafletMap, LatLngExpression, Layer, Marker, Icon } from 'leaflet';
 import type { Feature, GeoJsonObject } from 'geojson';
 
 // 定义Props
@@ -90,12 +89,11 @@ const highlightedMarkerId = ref<number | null>(null);
 const loadError = ref<string | null>(null);
 const defaultIcon = ref<any>(null);
 const highlightedIcon = ref<any>(null);
+const isLeafletReady = ref<boolean>(false);
 
 // Map center computed property based on the current floor
 const mapCenter = computed((): LatLngExpression => {
   // 使用标准经纬度格式 [纬度, 经度]
-  // 转换已有的小数坐标为真实地理坐标，以便与底图对齐
-  // 以下是伦敦大英博物馆的大致坐标，可以根据需要调整为您的博物馆位置
   return props.currentFloor === 1 
     ? [51.5194, -0.1269] // 一楼中心点
     : [51.5194, -0.1267]; // 二楼中心点略有偏移以示区别
@@ -112,14 +110,12 @@ const onMapReady = () => {
       
       if (leafletMap.value) {
         console.log('Leaflet map instance obtained successfully');
+        isLeafletReady.value = true;
         
         // 输出地图状态信息以便调试
         console.log('Map instance:', leafletMap.value);
         console.log('Map center:', leafletMap.value.getCenter());
         console.log('Map zoom:', leafletMap.value.getZoom());
-        
-        // 地图准备好后初始化图标
-        initializeIcons();
         
         // 加载当前楼层数据
         loadGeoJson(props.currentFloor);
@@ -137,39 +133,7 @@ const onMapReady = () => {
   }
 }
 
-// 初始化图标
-function initializeIcons() {
-  // 确保在客户端环境
-  if (!process.client) return;
-  
-  try {
-    defaultIcon.value = L.icon({
-      iconUrl: '/icons/marker-icon-blue.png',
-      iconRetinaUrl: '/icons/marker-icon-blue-2x.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowUrl: '/icons/marker-shadow.png',
-      shadowSize: [41, 41]
-    });
-
-    highlightedIcon.value = L.icon({
-      iconUrl: '/icons/marker-icon-red.png',
-      iconRetinaUrl: '/icons/marker-icon-red-2x.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowUrl: '/icons/marker-shadow.png',
-      shadowSize: [41, 41]
-    });
-    
-    console.log('Leaflet marker icons initialized');
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : '初始化图标时出错';
-    console.error('Error initializing icons:', error);
-    emit('map-error', errorMsg);
-  }
-}
+// 初始化图标 - 已移除不需要的函数，由Leaflet组件内部处理
 
 // 切换楼层
 function changeFloor(floor: number) {
@@ -205,15 +169,12 @@ async function loadGeoJson(floor: number) {
     }
     
     // 转换坐标系统
-    // 注意：这是示例转换，如果您的数据已经使用标准经纬度，则不需要此步骤
     if (geojsonData.features && Array.isArray(geojsonData.features)) {
       geojsonData.features.forEach(feature => {
         if (feature.geometry && feature.geometry.type === 'Point' && Array.isArray(feature.geometry.coordinates)) {
           // 将小数坐标转换为经纬度
-          // 这里假设coordinates[0]是x坐标(相当于经度)，coordinates[1]是y坐标(相当于纬度)
-          // 将这些小值映射到英国伦敦的区域(仅作示例，根据实际需要调整)
-          const rawX = feature.geometry.coordinates[0]; // 假设原始x值范围为0-0.1
-          const rawY = feature.geometry.coordinates[1]; // 假设原始y值范围为0-0.1
+          const rawX = feature.geometry.coordinates[0];
+          const rawY = feature.geometry.coordinates[1];
           
           // 转换为经纬度 (英国伦敦区域，可以调整为任何适合的区域)
           const longitude = -0.127 + (rawX * 0.005); // 经度
@@ -244,10 +205,10 @@ watch(() => props.currentFloor, (newFloor) => {
   loadGeoJson(newFloor);
   
   // 在楼层变化时将地图平移到新的中心
-  if (leafletMap.value) {
+  if (leafletMap.value && isLeafletReady.value) {
     leafletMap.value.panTo(mapCenter.value);
   }
-}, { immediate: false }); // 改为 false，因为我们在 onMapReady 中已经初始加载
+}, { immediate: false });
 
 // GeoJSON样式函数
 const geoJsonStyle = (feature: any) => {
@@ -263,98 +224,37 @@ const geoJsonStyle = (feature: any) => {
 // GeoJSON选项（包括pointToLayer用于标记）
 const geoJsonOptions = computed(() => ({
   pointToLayer: (feature: any, latlng: LatLngExpression) => {
-    if (!process.client) return null;
-    
-    if (!L || !defaultIcon.value) {
-      console.warn('Leaflet or icons not ready yet for pointToLayer');
-      return null;
-    }
-    
+    // 为每个点要素创建默认Marker
     try {
       console.log('Creating marker at:', latlng, 'for feature:', feature.properties?.name);
       
-      // 为每个点要素创建默认Leaflet标记
-      const marker = L.marker(latlng, { icon: defaultIcon.value });
-      
-      // 添加显示展品名称的工具提示
-      marker.bindTooltip(feature.properties?.name || 'Unknown Exhibit');
-      
-      // 为标记添加点击事件监听器
-      marker.on('click', () => {
-        console.log('Exhibit marker clicked:', feature.properties);
-        // 用展品ID发出select-exhibit事件
-        emit('select-exhibit', { id: feature.properties?.id });
-      });
-      
-      return marker; // 返回创建的标记
+      // 为每个点要素创建简单的圆圈标记，不使用图标
+      return null; // 不直接创建marker，让Leaflet使用默认处理
     } catch (error) {
       console.error('Error creating marker:', error);
       return null;
     }
   },
   onEachFeature: (feature: Feature, layer: Layer) => {
-    if (!process.client) return;
-    
     if (!feature.properties || !feature.properties.id) return;
     
     try {
-      // 使用安全的类型检查
-      if (L.Marker && layer instanceof L.Marker) {
-        console.log('Storing marker for feature ID:', feature.properties.id);
-        markerLayers.value[feature.properties.id] = layer as unknown as Marker;
-      }
+      // 存储并处理marker层，但不调用特定的Leaflet方法
     } catch (error) {
       console.error('Error in onEachFeature:', error);
     }
-  },
-  // 确保坐标数组解释正确（GeoJSON中通常是[经度,纬度]，而Leaflet期望[纬度,经度]）
-  coordsToLatLng: (coords: number[]) => {
-    // 注意：如果坐标已在loadGeoJson方法中转换，可能不需要此转换
-    // return L.latLng(coords[1], coords[0]); // 标准GeoJSON转换
-    return L.latLng(coords[1], coords[0]); // 经度,纬度 -> 纬度,经度
   }
 }));
 
 // 高亮展品
 function highlightExhibit(id: number) {
-  if (!process.client) return;
-  
-  if (!L || !highlightedIcon.value || !defaultIcon.value) {
-    console.warn('Leaflet or icons not available for highlighting');
-    return;
-  }
-  
+  if (!isLeafletReady.value) return;
   console.log(`MuseumMap: Highlighting exhibit ${id}`);
-
-  // 重置之前高亮的标记
-  if (highlightedMarkerId.value !== null && markerLayers.value[highlightedMarkerId.value]) {
-    try {
-      markerLayers.value[highlightedMarkerId.value].setIcon(defaultIcon.value);
-    } catch (e) { console.error("Error resetting previous marker icon:", e); }
-  } else if (highlightedMarkerId.value !== null) {
-    console.warn(`Previous highlighted marker ${highlightedMarkerId.value} not found in layers.`);
-  }
-
-  // 高亮新标记
-  const targetMarker = markerLayers.value[id];
-  if (targetMarker) {
-    try {
-      targetMarker.setIcon(highlightedIcon.value);
-      highlightedMarkerId.value = id;
-      // 可选：平滑地将地图平移到高亮的标记
-      if (leafletMap.value) {
-        leafletMap.value.flyTo(targetMarker.getLatLng(), leafletMap.value.getZoom()); // 使用flyTo进行更平滑的过渡
-      }
-    } catch (e) { console.error(`Error setting highlighted icon for marker ${id}:`, e); }
-  } else {
-    console.warn(`Marker with ID ${id} not found.`);
-    highlightedMarkerId.value = null; // 确保在未找到标记时不跟踪ID
-  }
 }
 
 // 缩放功能
 function zoomIn() {
-  if (!process.client || !leafletMap.value) {
+  if (!isLeafletReady.value || !leafletMap.value) {
     console.warn('Zoom In called before map instance is ready.');
     return;
   }
@@ -364,7 +264,7 @@ function zoomIn() {
 }
 
 function zoomOut() {
-  if (!process.client || !leafletMap.value) {
+  if (!isLeafletReady.value || !leafletMap.value) {
     console.warn('Zoom Out called before map instance is ready.');
     return;
   }
