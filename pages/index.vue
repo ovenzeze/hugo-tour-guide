@@ -168,7 +168,7 @@ function toggleFavorite(item: TourItem) {
 
 // 导航到详情页
 function navigateToDetail(item: TourItem) {
-  navigateTo(`/tour/${item.id}`);
+  navigateTo('/tour');
 }
 </script>
 

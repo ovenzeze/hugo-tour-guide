@@ -11,7 +11,7 @@
     </main>
     
     <!-- 移动端底部导航 -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 h-16">
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 h-16">
       <ul class="flex justify-around h-full items-center">
         <li v-for="link in bottomNavLinks" :key="link.path" class="flex-1 h-full">
           <NuxtLink 

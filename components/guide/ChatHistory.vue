@@ -1,13 +1,13 @@
-按照<template>
+<template>
   <div class="chat-history">
     <div
       v-if="messages.length === 0"
-      class="text-center py-10 text-gray-500"
+      class="text-center py-10 text-muted-foreground"
       v-motion
       :initial="{ opacity: 0 }"
       :enter="{ opacity: 1, transition: { delay: 0.2 } }"
     >
-      开始与您的AI导游对话
+      Start a conversation with your AI guide
     </div>
 
     <TransitionGroup name="chat" tag="div" class="space-y-4">
@@ -27,58 +27,82 @@
           },
         }"
       >
+        <!-- AI avatar (only shown for AI messages) -->
+        <div v-if="message.sender === 'ai'" class="flex-shrink-0 mr-2">
+          <Avatar class="size-8 border border-primary/10">
+            <AvatarImage src="/assets/images/guide/ai-avatar.png" alt="AI Guide" />
+            <AvatarFallback class="bg-primary-50 text-primary-900 text-xs">AI</AvatarFallback>
+          </Avatar>
+        </div>
+        
         <div
-          class="max-w-[80%] rounded-2xl px-4 py-2 text-sm"
+          class="max-w-[80%] rounded-lg shadow-sm px-4 py-3 text-sm"
           :class="
             message.sender === 'user'
-              ? 'bg-blue-600 text-white rounded-br-none'
-              : 'bg-gray-100 text-gray-800 rounded-bl-none'
+              ? 'bg-primary text-primary-foreground rounded-br-none'
+              : 'bg-muted/80 text-foreground rounded-bl-none'
           "
         >
-          <!-- 文本消息 -->
+          <!-- Text message -->
           <div v-if="!message.attachments || message.attachments.length === 0">
             {{ message.content }}
           </div>
 
-          <!-- 带附件的消息 -->
+          <!-- Messages with attachments -->
           <div v-else>
             <div class="mb-2">{{ message.content }}</div>
             
-            <!-- 图片附件 -->
+            <!-- Image attachments -->
             <div v-for="(attachment, i) in message.attachments" :key="i" class="my-1">
               <img
                 v-if="attachment.type === 'image'"
                 :src="attachment.url"
-                class="rounded max-w-full"
-                :alt="attachment.caption || 'Image'"
+                class="rounded-md max-w-full h-auto"
+                :alt="attachment.caption || 'Image attachment'"
+                loading="lazy"
               />
               
-              <!-- 音频附件 -->
-              <audio
-                v-else-if="attachment.type === 'audio'"
-                controls
-                class="w-full max-w-[250px]"
-              >
-                <source :src="attachment.url" type="audio/mpeg">
-                您的浏览器不支持音频元素。
-              </audio>
+              <!-- Audio attachments -->
+              <div v-else-if="attachment.type === 'audio'" class="bg-background/80 rounded-md p-2">
+                <div class="flex items-center gap-2 mb-1">
+                  <Icon name="ph:speaker-high" class="text-primary size-4" />
+                  <span class="text-xs font-medium">Audio clip</span>
+                </div>
+                <audio
+                  controls
+                  class="w-full max-w-[250px]"
+                >
+                  <source :src="attachment.url" type="audio/mpeg">
+                  Your browser does not support audio playback
+                </audio>
+              </div>
               
-              <!-- 链接附件 -->
+              <!-- Link attachments -->
               <a
                 v-else-if="attachment.type === 'link'"
                 :href="attachment.url"
                 target="_blank"
-                class="text-blue-500 underline block"
+                class="flex items-center gap-1 text-primary hover:underline block p-2 bg-primary/5 rounded-md"
               >
+                <Icon name="ph:link" class="size-4" />
                 {{ attachment.caption || attachment.url }}
+                <Icon name="ph:arrow-square-out" class="size-3 ml-1" />
               </a>
             </div>
           </div>
           
-          <!-- 时间戳 -->
-          <div class="text-xs opacity-70 text-right mt-1">
-            {{ formatTime(message.timestamp) }}
+          <!-- Timestamp -->
+          <div class="text-xs opacity-70 text-right mt-2 flex items-center justify-end gap-1">
+            <span>{{ formatTime(message.timestamp) }}</span>
+            <Icon v-if="message.sender === 'user'" name="ph:check-circle" class="size-3" :class="{'text-blue-500': true}" />
           </div>
+        </div>
+        
+        <!-- User avatar (only shown for user messages) -->
+        <div v-if="message.sender === 'user'" class="flex-shrink-0 ml-2">
+          <Avatar class="size-8 border border-primary/10">
+            <AvatarFallback class="bg-blue-100 text-blue-800 text-xs">You</AvatarFallback>
+          </Avatar>
         </div>
       </div>
     </TransitionGroup>
@@ -88,8 +112,10 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
 import type { ChatMessage } from "~/types";
+import { Icon } from "#components";
+import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 
-// 定义组件属性
+// Define component props
 const props = defineProps({
   messages: {
     type: Array as PropType<ChatMessage[]>,
@@ -97,7 +123,7 @@ const props = defineProps({
   },
 });
 
-// 格式化时间
+// Format time
 function formatTime(date: Date): string {
   if (!(date instanceof Date)) {
     date = new Date(date);
