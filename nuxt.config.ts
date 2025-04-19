@@ -25,12 +25,7 @@ export default defineNuxtConfig({
     preset: 'vercel'
   },
 
-  content: {
-    database: {
-      type: 'postgres',
-      url: process.env.POSTGRES_URL || '' // 将在构建时使用环境变量，提供默认值避免TypeScript错误
-    }
-  },
+  // 已移除content配置
   modules: [
     'shadcn-nuxt',
     "@nuxtjs/google-fonts",
@@ -38,8 +33,16 @@ export default defineNuxtConfig({
     '@vueuse/motion/nuxt',
     '@vite-pwa/nuxt',
     '@nuxtjs/leaflet',
-    '@nuxt/content'
+    '@nuxtjs/mdc'
   ],
+  
+  // MDC模块配置
+  mdc: {
+    // 可选配置项
+    highlight: {
+      theme: 'github-dark'
+    }
+  },
   googleFonts: {
     display: "swap",
     download: true,
