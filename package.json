@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "nuxt build",
-    "build:vercel": "pnpm approve-builds better-sqlite3 @parcel/watcher esbuild sharp && nuxt build",
+    "build:vercel": "npm approve-builds better-sqlite3 @parcel/watcher esbuild sharp && nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
