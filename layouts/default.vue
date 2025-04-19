@@ -4,8 +4,8 @@
     <DynamicHeader />
     
     <!-- 主要内容区 -->
-    <main class="flex-1 overflow-y-auto pt-4 pb-[calc(64px+1rem)] md:pb-4">
-      <div class="container mx-auto px-4 h-full">
+    <main class="flex-1 overflow-hidden overscroll-none pb-[calc(64px+1rem)] md:pb-4">
+      <div class="container mx-auto px-4 h-full overflow-scroll">
         <slot />
       </div>
     </main>
@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import DynamicHeader from '~/components/layout/DynamicHeader.vue'
 
 const navLinks = [

@@ -17,9 +17,9 @@ export default defineNuxtConfig({
   },
 
   content: {
-    // 使用内存存储而非 SQLite
-    storage: {
-      driver: 'memory' // 或使用其他兼容的驱动
+    database: {
+      type: 'postgres',
+      url: process.env.POSTGRES_URL
     }
   },
   modules: [
