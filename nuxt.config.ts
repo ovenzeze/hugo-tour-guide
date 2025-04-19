@@ -11,6 +11,11 @@ export default defineNuxtConfig({
       tailwindcss(),
     ],
   },
+
+  nitro: {
+    preset: 'vercel'
+  },
+
   modules: [
     'shadcn-nuxt',
     "@nuxtjs/google-fonts",
@@ -30,15 +35,6 @@ export default defineNuxtConfig({
       "Crimson Text": [400, 600, 700],
       "Noto Sans SC": [400, 600],
     },
-  },
-  content: {
-    documentDriven: true,
-    storage: {
-      fs: {
-        // 使用内存驱动
-        driver: 'memory'
-      }
-    }
   },
   app: {
     head: {

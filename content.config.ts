@@ -12,5 +12,5 @@ export default defineContentConfig({
                 date: z.date() // Corrected to use z.date() instead of z.Date()
             })
         })
-    }
+    },
 })
