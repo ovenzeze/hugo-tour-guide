@@ -37,15 +37,6 @@ export default defineNuxtConfig({
     '@nuxtjs/mdc'
   ],
 
-  // Leaflet模块配置
-  leaflet: {
-    // Leaflet 选项
-    accessToken: null, // 如果需要使用Mapbox，可以在这里设置token
-    useGlobalLeaflet: true, // 启用全局Leaflet，与组件配置一致
-    plugins: [
-      'leaflet-indoor'  // 添加需要的插件
-    ]
-  },
 
   // MDC模块配置
   mdc: {
@@ -85,9 +76,7 @@ export default defineNuxtConfig({
     }
   },
   plugins: [
-    '~/plugins/motion.client',
     '~/plugins/pinia',
-    '~/plugins/leaflet-indoor.client'
   ],
   shadcn: {
     prefix: '',
@@ -139,7 +128,7 @@ export default defineNuxtConfig({
     devOptions: {
       enabled: true,
       suppressWarnings: true,
-      navigateFallbackAllowlist: [/^\/$/],
+      navigateFallbackAllowlist: [/^\//],  // 匹配所有以/开头的路径
       type: 'module'
     }
   }

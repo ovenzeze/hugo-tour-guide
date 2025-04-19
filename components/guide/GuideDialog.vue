@@ -1,7 +1,10 @@
 <template>
-  <Dialog v-model="isOpen">
-    <div
-      class="guide-dialog max-w-md w-full mx-auto bg-white rounded-xl overflow-hidden flex flex-col max-h-[80vh]"
+  <Dialog 
+    v-model="isOpen"
+    class="z-50"
+  >
+    <DialogContent
+      class="guide-dialog max-w-md w-full mx-auto bg-white rounded-xl overflow-hidden flex flex-col max-h-[80vh] sm:max-w-lg"
     >
       <!-- 导游信息 -->
       <div class="p-4 border-b">
@@ -13,7 +16,7 @@
           </div>
           <div>
             <h3 class="font-medium">Lisa Ghimire</h3>
-            <p class="text-xs text-gray-500">AI 博物馆导游</p>
+            <p class="text-xs text-gray-500">AI Museum Guide</p>
           </div>
         </div>
       </div>
@@ -27,13 +30,13 @@
       <div class="border-t">
         <VoiceInterface @send="sendMessage" />
       </div>
-    </div>
+    </DialogContent>
   </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from "vue";
-import { Dialog } from "~/components/ui/dialog";
+import { Dialog, DialogContent } from "~/components/ui/dialog";
 import ChatHistory from "./ChatHistory.vue";
 import VoiceInterface from "../chat/VoiceInterface.vue";
 import { useChatStore } from "~/stores/chatStore";
@@ -83,3 +86,11 @@ function sendMessage(content: string) {
   emit("send", content);
 }
 </script>
+
+<style scoped>
+/* 对话框样式 */
+:deep(.dialog-overlay) {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+</style>
