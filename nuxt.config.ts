@@ -16,6 +16,12 @@ export default defineNuxtConfig({
     preset: 'vercel'
   },
 
+  content: {
+    // 使用内存存储而非 SQLite
+    storage: {
+      driver: 'memory' // 或使用其他兼容的驱动
+    }
+  },
   modules: [
     'shadcn-nuxt',
     "@nuxtjs/google-fonts",
