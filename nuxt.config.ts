@@ -11,6 +11,15 @@ export default defineNuxtConfig({
       tailwindcss(),
     ],
   },
+  modules: [
+    'shadcn-nuxt',
+    "@nuxtjs/google-fonts",
+    '@nuxt/icon',
+    '@vueuse/motion/nuxt',
+    '@vite-pwa/nuxt',
+    '@nuxtjs/leaflet',
+    '@nuxt/content'
+  ],
   googleFonts: {
     display: "swap",
     download: true,
@@ -22,7 +31,15 @@ export default defineNuxtConfig({
       "Noto Sans SC": [400, 600],
     },
   },
-
+  content: {
+    documentDriven: true,
+    storage: {
+      fs: {
+        // 使用内存驱动
+        driver: 'memory'
+      }
+    }
+  },
   app: {
     head: {
       charset: 'utf-8',
@@ -45,15 +62,6 @@ export default defineNuxtConfig({
   plugins: [
     '~/plugins/motion.client',
     '~/plugins/pinia'
-  ],
-  modules: [
-    'shadcn-nuxt',
-    "@nuxtjs/google-fonts",
-    '@nuxt/icon',
-    '@vueuse/motion/nuxt',
-    '@vite-pwa/nuxt',
-    '@nuxtjs/leaflet',
-    '@nuxt/content'
   ],
   shadcn: {
     prefix: '',
