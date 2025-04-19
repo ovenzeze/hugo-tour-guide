@@ -1,10 +1,16 @@
-import { defineCollection } from '@nuxt/content'
+import { defineCollection, defineContentConfig, z } from '@nuxt/content'
 
-// 定义文档集合
-export default {
+export default defineContentConfig({
     collections: {
-        docs: defineCollection({
-            // 可以添加特定的模式验证，这里我们保持简单
+        content: defineCollection({
+            source: '**/*.md',
+            type: 'page',
+            // Define custom schema for docs collection
+            schema: z.object({
+                tags: z.array(z.string()),
+                image: z.string(),
+                date: z.date() // Corrected to use z.date() instead of z.Date()
+            })
         })
     }
-}
+})

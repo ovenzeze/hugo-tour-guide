@@ -11,7 +11,6 @@ export default defineNuxtConfig({
       tailwindcss(),
     ],
   },
-
   googleFonts: {
     display: "swap",
     download: true,
@@ -59,12 +58,6 @@ export default defineNuxtConfig({
   shadcn: {
     prefix: '',
     componentDir: './components/ui'
-  },
-  content: {
-    documentDriven: true,
-    highlight: {
-      theme: 'github-light'
-    }
   },
   pwa: {
     registerType: 'autoUpdate',

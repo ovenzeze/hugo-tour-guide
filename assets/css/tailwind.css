@@ -1,7 +1,5 @@
-
-@import "tw-animate-css";
 @import "tailwindcss";
-
+/* @import "./prose-styles.css"; */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -120,6 +118,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
