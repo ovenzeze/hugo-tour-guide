@@ -1,17 +1,12 @@
 <template>
   <div class="container mx-auto py-8 px-4">
-    <ContentRenderer v-if="data" :value="data" class="prose prose-lg max-w-none" />
-    <div v-else class="py-10 text-center">
-      <p class="text-lg text-gray-600">加载中...</p>
-    </div>
+    <!-- 直接使用 ContentDoc 组件而不是 ContentRenderer -->
+    <ContentDoc class="prose prose-lg max-w-none" />
   </div>
 </template>
 
 <script setup lang="ts">
-const { path } = useRoute()
-const { data } = await useAsyncData(`content-${path}`, () => {
-  return queryContent().where({ _path: path }).findOne()
-})
+// 无需复杂的查询逻辑，ContentDoc 会自动处理
 </script>
 
 <style scoped>
