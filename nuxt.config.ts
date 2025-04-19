@@ -3,6 +3,15 @@ import tailwindcss from '@tailwindcss/vite'
 import { defineNuxtConfig } from 'nuxt/config'
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
+  runtimeConfig: {
+    // 服务器端可用的私有键
+    postgresUrl: process.env.POSTGRES_URL,
+    // 可以暴露给客户端的公共键
+    public: {
+      // 如果你想在客户端也访问这个URL，取消下面这行的注释
+      // postgresUrl: process.env.POSTGRES_URL
+    }
+  },
   devtools: { enabled: true },
   css: ['~/assets/css/tailwind.css'],
 
@@ -19,7 +28,7 @@ export default defineNuxtConfig({
   content: {
     database: {
       type: 'postgres',
-      url: process.env.POSTGRES_URL
+      url: process.env.POSTGRES_URL || '' // 将在构建时使用环境变量，提供默认值避免TypeScript错误
     }
   },
   modules: [
