@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 
 // Get current route and router instance
 const route = useRoute()
@@ -47,8 +47,28 @@ const showBackButton = computed(() => {
   return currentRoute.value !== '/'
 })
 
-// Get page title based on current route
+// 使用useServerSeoMeta获取当前页面的SEO元数据
+const headConfig = {}
+const head = useHead(headConfig)
+
+// Get page title based on meta information or fallback to default titles
 const pageTitle = computed(() => {
+  // 1. 检查路由元数据中的标题（通过definePageMeta设置）
+  if (route.meta && route.meta.title) {
+    return route.meta.title
+  }
+  
+  // 2. 获取通过useHead或useSeoMeta设置的标题
+  // 这种方式在服务器端和客户端都能正常工作
+  const seoTitle = process.client && document.title && document.title !== 'Nuxt App'
+    ? document.title
+    : undefined
+    
+  if (seoTitle) {
+    return seoTitle
+  }
+  
+  // 3. 根据路由路径使用默认标题
   switch (currentRoute.value) {
     case '/':
       return 'AI Tour Guide'
@@ -60,7 +80,18 @@ const pageTitle = computed(() => {
       return 'Tour Route'
     case '/chat':
       return 'Chat with Guide'
+    case '/docs':
+      return 'Documentation'
+    case '/meta-test':
+      return 'Meta 测试页面 | 自定义标题' // 为了解决SSR水合问题，添加硬编码标题
+    case '/meta-test-page-meta':
+      return '使用 definePageMeta 设置的标题' // 为了解决SSR水合问题，添加硬编码标题
     default:
+      // 4. 对于文档页面，尝试从路径中提取标题
+      if (currentRoute.value.startsWith('/docs/')) {
+        const docName = currentRoute.value.split('/').pop()
+        return docName ? `Doc: ${docName.charAt(0).toUpperCase() + docName.slice(1)}` : 'Documentation'
+      }
       return 'AI Tour Guide'
   }
 })
