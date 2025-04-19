@@ -1,87 +1,73 @@
-// Tour store for managing tour routes and exhibit data
-// Note: This is a placeholder implementation
-
 import { defineStore } from 'pinia'
-import type { Exhibit, TourRoute } from '~/types'
-import { fetchExhibits, generateTourRoute } from '~/utils/api'
+import { ref } from 'vue'
+
+export interface ExhibitItem {
+  id: number;
+  name: string;
+  location: string;
+  floor: number;
+  highlight: boolean;
+  description?: string;
+}
 
 export const useTourStore = defineStore('tour', () => {
-  // State
-  const exhibits = ref<Exhibit[]>([])
-  const currentRoute = ref<TourRoute | null>(null)
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
+  // 当前楼层
+  const currentFloor = ref(1)
   
-  // Getters
-  const exhibitCount = computed(() => exhibits.value.length)
+  // 推荐路线数据
+  const routeItems = ref<ExhibitItem[]>([
+    { id: 1, name: 'Egyptian Collection', location: 'Floor 1, Room 4', floor: 1, highlight: false },
+    { id: 2, name: 'Greek Sculptures', location: 'Floor 1, Room 7', floor: 1, highlight: false },
+    { id: 3, name: 'Renaissance Paintings', location: 'Floor 2, Room 3', floor: 2, highlight: false },
+    { id: 4, name: 'Modern Art Gallery', location: 'Floor 2, Room 8', floor: 2, highlight: false }
+  ])
   
-  const exhibitsByCategory = computed(() => {
-    const result: Record<string, Exhibit[]> = {}
-    
-    exhibits.value.forEach(exhibit => {
-      exhibit.category.forEach(category => {
-        if (!result[category]) {
-          result[category] = []
-        }
-        result[category].push(exhibit)
-      })
-    })
-    
-    return result
-  })
-  
-  const routeDuration = computed(() => {
-    return currentRoute.value?.estimatedDurationMinutes || 0
-  })
-  
-  // Actions
-  async function loadExhibits(preferences: any) {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      exhibits.value = await fetchExhibits(preferences)
-    } catch (err: any) {
-      error.value = err.message || 'Failed to load exhibits'
-      console.error('Error loading exhibits:', err)
-    } finally {
-      isLoading.value = false
+  // 特色展品数据
+  const featuredExhibits = ref([
+    {
+      id: 101,
+      name: 'The Rosetta Stone',
+      description: 'Ancient Egyptian artifact, key to deciphering hieroglyphics',
+      floor: 1
+    },
+    {
+      id: 102,
+      name: 'Venus de Milo',
+      description: 'Ancient Greek sculpture from the Hellenistic period',
+      floor: 1
+    },
+    {
+      id: 103,
+      name: 'Mona Lisa',
+      description: 'Leonardo da Vinci\'s masterpiece portrait',
+      floor: 2
     }
-  }
+  ])
   
-  async function createTourRoute(preferences: any) {
-    isLoading.value = true
-    error.value = null
+  // 当前高亮的展品
+  const highlightedExhibit = ref<ExhibitItem | null>(null)
+  
+  // 语音指导状态
+  const isGuideExplaining = ref(false)
+  
+  // 方法: 高亮展品
+  function highlightExhibit(item: ExhibitItem) {
+    // 重置所有展品的高亮状态
+    routeItems.value.forEach(exhibit => exhibit.highlight = false)
     
-    try {
-      currentRoute.value = await generateTourRoute(preferences)
-    } catch (err: any) {
-      error.value = err.message || 'Failed to generate tour route'
-      console.error('Error generating tour route:', err)
-    } finally {
-      isLoading.value = false
-    }
-  }
-  
-  function clearRoute() {
-    currentRoute.value = null
+    // 设置当前展品为高亮
+    item.highlight = true
+    highlightedExhibit.value = item
+    
+    return item
   }
   
   return {
-    // State
-    exhibits,
-    currentRoute,
-    isLoading,
-    error,
-    
-    // Getters
-    exhibitCount,
-    exhibitsByCategory,
-    routeDuration,
-    
-    // Actions
-    loadExhibits,
-    createTourRoute,
-    clearRoute
+    currentFloor,
+    routeItems,
+    featuredExhibits,
+    highlightedExhibit,
+    isGuideExplaining,
+    highlightExhibit
   }
 })

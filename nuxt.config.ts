@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { defineNuxtConfig } from 'nuxt/config'
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
+  ssr: false,
   runtimeConfig: {
     // 服务器端可用的私有键
     postgresUrl: process.env.POSTGRES_URL,
@@ -35,7 +36,17 @@ export default defineNuxtConfig({
     '@nuxtjs/leaflet',
     '@nuxtjs/mdc'
   ],
-  
+
+  // Leaflet模块配置
+  leaflet: {
+    // Leaflet 选项
+    accessToken: null, // 如果需要使用Mapbox，可以在这里设置token
+    useGlobalLeaflet: true, // 启用全局Leaflet，与组件配置一致
+    plugins: [
+      'leaflet-indoor'  // 添加需要的插件
+    ]
+  },
+
   // MDC模块配置
   mdc: {
     // 可选配置项
@@ -75,7 +86,8 @@ export default defineNuxtConfig({
   },
   plugins: [
     '~/plugins/motion.client',
-    '~/plugins/pinia'
+    '~/plugins/pinia',
+    '~/plugins/leaflet-indoor.client'
   ],
   shadcn: {
     prefix: '',

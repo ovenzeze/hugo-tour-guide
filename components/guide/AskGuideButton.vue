@@ -1,6 +1,7 @@
 <template>
   <button
-    class="fixed bottom-6 right-6 bg-blue-600 text-white rounded-full h-14 px-4 shadow-lg flex items-center justify-center z-50 hover:bg-blue-700 transition-all duration-300"
+    class="fixed bottom-20 right-6 bg-blue-600 text-white rounded-full h-14 px-4 shadow-lg flex items-center justify-center z-50 hover:bg-blue-700 transition-all duration-300"
+    title="Ask the AI guide"
     v-motion
     :initial="{ opacity: 0, scale: 0.8, y: 20 }"
     :enter="{
