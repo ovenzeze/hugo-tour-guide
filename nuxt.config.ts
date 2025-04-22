@@ -140,7 +140,8 @@ export default defineNuxtConfig({
     },
     workbox: {
       navigateFallback: '/',
-      globPatterns: ['**/*.{js,css,html,png,svg,ico}']
+      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+      maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8MB，足够缓存最大的文件 (6.98MB)
     },
     client: {
       installPrompt: true,
