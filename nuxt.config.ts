@@ -6,26 +6,17 @@ export default defineNuxtConfig({
   ssr: false,
   runtimeConfig: {
     postgresUrl: process.env.POSTGRES_URL,
-    public: {}
+    elevenlabsApiKey: process.env.ELEVENLABS_API_KEY,
+    elevenlabsBaseUrl: process.env.ELEVENLABS_API_BASE_URL || 'https://api.elevenlabs.io/v1',
+
+    public: {
+      elevenlabsDefaultVoiceId: process.env.ELEVENLABS_DEFAULT_VOICE_ID || 'pNInz6obpgDQGcFmaJgB',
+      elevenlabsDefaultModelId: process.env.ELEVENLABS_DEFAULT_MODEL_ID || 'eleven_multilingual_v2'
+    }
   },
   devtools: { enabled: true },
   css: ['~/assets/css/tailwind.css'],
 
-  // Vue配置，禁用实验性功能警告
-  vue: {
-    compilerOptions: {
-      isCustomElement: (tag) => tag === 'Suspense'
-    },
-    config: {
-      warnHandler: function(msg: string, vm: any, trace: any) {
-        // 忽略Suspense相关警告
-        if (msg.includes('Suspense is an experimental feature')) {
-          return
-        }
-        console.warn(msg, trace)
-      }
-    }
-  },
 
   // 添加组件自动导入配置
   components: {
@@ -66,15 +57,6 @@ export default defineNuxtConfig({
     '@nuxtjs/mdc'
   ],
 
-  motion: {
-    directives: {
-      // 启用默认的motion指令
-      'motion': true,
-      'motion-fade': true,
-      'motion-pop': true
-    }
-  },
-
 
   // MDC模块配置
   mdc: {
@@ -83,7 +65,6 @@ export default defineNuxtConfig({
       theme: 'github-dark'
     }
   },
-  // Google Fonts 配置
   googleFonts: {
     // @ts-ignore
     families: {
@@ -115,8 +96,7 @@ export default defineNuxtConfig({
       ]
     }
   },
-  plugins: [
-  ],
+  plugins: [],
   shadcn: {
     prefix: '',
     componentDir: './components/ui'

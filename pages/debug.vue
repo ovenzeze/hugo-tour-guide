@@ -73,6 +73,45 @@
               Test Notification
             </button>
           </section>
+
+          <!-- ElevenLabs TTS Test Section -->
+          <section class="p-4 border border-teal-300 bg-teal-50 rounded-lg">
+            <h2 class="text-lg font-semibold mb-2 text-teal-800">ElevenLabs TTS Test</h2>
+            <p class="text-sm text-gray-700 mb-3">
+              Test the ElevenLabs Text-to-Speech API integration.
+            </p>
+            <textarea 
+              v-model="elevenLabsInputText" 
+              placeholder="输入要转换为语音的文本"
+              class="w-full p-2 border rounded mb-2 text-sm"
+              rows="3"
+            ></textarea>
+            <button
+              @click="handleElevenLabsGenerate"
+              :disabled="elevenLabsIsLoading"
+              class="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 transition text-sm flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Icon v-if="!elevenLabsIsLoading" name="ph:play-circle" class="mr-2 w-4 h-4" />
+              <Icon v-else name="svg-spinners:180-ring-with-bg" class="mr-2 w-4 h-4" />
+              {{ elevenLabsIsLoading ? '生成中...' : '生成语音 (ElevenLabs)' }}
+            </button>
+
+            <div v-if="elevenLabsError" class="mt-3 p-2 text-sm text-red-700 bg-red-100 border border-red-300 rounded">
+              错误: {{ elevenLabsError }}
+            </div>
+
+            <div v-if="elevenLabsAudioUrl" class="mt-3">
+              <audio controls :src="elevenLabsAudioUrl" class="w-full">
+                您的浏览器不支持音频播放。
+              </audio>
+              <button 
+                @click="clearElevenLabsAudio" 
+                class="mt-2 px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition text-xs"
+              >
+                清除音频
+              </button>
+            </div>
+          </section>
         </div>
       </Transition>
     </div>
@@ -147,7 +186,8 @@
 import { useTourStore } from '~/stores/tourStore'
 import { useVoiceNavigation } from '~/composables/useVoiceNavigation'
 import { usePwa } from '~/composables/usePwa'
-import { ref } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
+import { useElevenLabsTTS } from '~/composables/useElevenLabsTTS'
 
 // Define page meta for title
 definePageMeta({
@@ -171,6 +211,31 @@ const isSSR = computed(() => process.server)
 
 // Get reactive store state
 const tourStoreState = computed(() => tourStore.$state)
+
+// --- ElevenLabs TTS Debug State --- 
+const elevenLabsInputText = ref('')
+const {
+  audioUrl: elevenLabsAudioUrl, 
+  isLoading: elevenLabsIsLoading, 
+  error: elevenLabsError, 
+  generateTTS: generateElevenLabsTTS, 
+  clearAudio: clearElevenLabsAudio 
+} = useElevenLabsTTS()
+
+const handleElevenLabsGenerate = () => {
+  generateElevenLabsTTS(elevenLabsInputText.value)
+  // To pass options:
+  // generateElevenLabsTTS(elevenLabsInputText.value, {
+  //   voiceId: 'some_voice_id', 
+  //   modelId: 'eleven_multilingual_v2'
+  // })
+}
+
+// Cleanup ElevenLabs audio on unmount
+onUnmounted(() => {
+  clearElevenLabsAudio()
+})
+// --- End ElevenLabs TTS Debug State ---
 
 // Example actions
 function clearStoreState() {
