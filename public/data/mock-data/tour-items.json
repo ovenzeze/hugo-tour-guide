@@ -2,7 +2,7 @@
   {
     "id": "metropolitan-nyc",
     "name": "Metropolitan Museum of Art",
-    "cover": "https://source.unsplash.com/600x400/?museum,metropolitan&id=metropolitan-nyc",
+    "cover": "https://upload.wikimedia.org/wikipedia/commons/3/30/Metropolitan_Museum_of_Art_%28The_Met%29_-_Central_Park%2C_NYC.jpg",
     "desc": "World-class art collection",
     "tags": ["Art", "History"],
     "distance": 5.0,
@@ -14,7 +14,7 @@
   {
     "id": "amnh-nyc",
     "name": "American Museum of Natural History",
-    "cover": "https://source.unsplash.com/600x400/?museum,natural&id=amnh",
+    "cover": "/images/museums/amnh.jpg",
     "desc": "Natural history and science exhibits",
     "tags": ["Science", "History"],
     "distance": 5.2,
@@ -26,7 +26,7 @@
   {
     "id": "nmnh-dc",
     "name": "National Museum of Natural History",
-    "cover": "https://source.unsplash.com/600x400/?museum,natural,history,washington&id=nmnh-dc",
+    "cover": "https://images.unsplash.com/photo-1682978107355-f8322d2955cb?q=80&w=3687&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     "desc": "Extensive natural history collection",
     "tags": ["Science", "Nature"],
     "distance": 3.5,
@@ -38,7 +38,7 @@
   {
     "id": "louvre-paris",
     "name": "Louvre Museum",
-    "cover": "https://source.unsplash.com/600x400/?museum,louvre&id=louvre-paris",
+    "cover": "https://upload.wikimedia.org/wikipedia/commons/6/66/Louvre_Museum_Wikimedia_Commons.jpg",
     "desc": "Home to the Mona Lisa and Venus de Milo",
     "tags": ["Art", "History"],
     "distance": 10.0,
@@ -50,7 +50,7 @@
   {
     "id": "vatican-museums",
     "name": "Vatican Museums",
-    "cover": "https://source.unsplash.com/600x400/?museum,vatican&id=vatican-museums",
+    "cover": "https://upload.wikimedia.org/wikipedia/commons/2/2b/Sala_rotonda_-_Museo_Pio-Clementino_-_Vatican_Museums_-_DSC00999.jpg",
     "desc": "Art and history of the Vatican, including the Sistine Chapel",
     "tags": ["Art", "Religion"],
     "distance": 12.0,
@@ -62,7 +62,7 @@
   {
     "id": "british-london",
     "name": "British Museum",
-    "cover": "https://source.unsplash.com/600x400/?museum,british,london&id=british-london",
+    "cover": "/images/museums/british.jpg",
     "desc": "Global art and antiquities collection",
     "tags": ["History", "Culture"],
     "distance": 8.0,

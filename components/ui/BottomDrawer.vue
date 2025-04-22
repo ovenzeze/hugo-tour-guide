@@ -3,7 +3,7 @@
     <Transition name="overlay">
       <div 
         v-if="modelValue" 
-        class="fixed inset-0 bg-black bg-opacity-50 z-50"
+        class="fixed inset-0 backdrop-blur-xs bg-stone-900/20 z-50"
         @click="$emit('update:modelValue', false)"
       ></div>
     </Transition>
@@ -46,12 +46,19 @@ defineEmits(['update:modelValue'])
 <style>
 .overlay-enter-active,
 .overlay-leave-active {
-  transition: opacity 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .overlay-enter-from,
 .overlay-leave-to {
   opacity: 0;
+  backdrop-filter: blur(0px);
+}
+
+.overlay-enter-to,
+.overlay-leave-from {
+  opacity: 1;
+  backdrop-filter: blur(8px);
 }
 
 .drawer-enter-active,

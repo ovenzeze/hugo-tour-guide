@@ -58,9 +58,9 @@ const pageTitle = computed(() => {
   // 2. Fallback based on route path
   switch (currentRoute.value) {
     case '/':
-      return 'AI Tour Guide'
+      return 'Hugo Tour Guide'
     case '/guide':
-      return 'AI Tour Guide' // Assuming same as home page
+      return 'Hugo Tour Guide' // Assuming same as home page
     case '/debug': // Updated path
       return 'Debug'
     case '/tour':

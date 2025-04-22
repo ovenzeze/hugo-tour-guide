@@ -90,9 +90,17 @@
       :initial="{ opacity: 0 }"
       :enter="{ opacity: 1, transition: { delay: 0.5 } }"
     >
-      <Alert variant="default" class="mt-10 text-center">
-        No items found, try adjusting your filters.
-      </Alert>
+      <div class="text-center p-6">
+        <Icon name="ph:map-trifold" class="w-16 h-16 mx-auto text-gray-300 mb-4" />
+        <Alert variant="default" class="mt-4 text-center">
+          <h3 class="font-medium text-lg mb-2">No items found</h3>
+          <p class="text-gray-600">Try adjusting your filters or check back later for new tours.</p>
+        </Alert>
+        <Button class="mt-6 bg-amber-800 text-white hover:bg-amber-700" size="lg">
+          <Icon name="ph:compass" class="mr-2 w-5 h-5" />
+          Explore Recommended Tours
+        </Button>
+      </div>
     </div>
   </div>
 </template>
@@ -143,7 +151,7 @@ const { data: items, pending, error } = await useAsyncData<TourItem[]>(
   'tour-items',
   async () => {
     try {
-      const data = await $fetch<TourItem[]>('/mock-data/tour-items.json')
+      const data = await $fetch<TourItem[]>('/data/mock-data/tour-items.json')
       return data
     } catch (e) {
       console.error('Error fetching tour items with useAsyncData:', e)
