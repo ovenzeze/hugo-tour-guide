@@ -20,7 +20,8 @@ export function useVoiceNavigation() {
     // Add other synthesis options if needed (rate, pitch, volume)
   }))
   const { 
-    speak: synthesisSpeak, 
+    speak: synthesisSpeak,
+    trySpeak: synthesisTrySpeak, 
     isSpeaking: isSynthesisSpeaking, 
     setLang: setSynthesisLang,
     // Add other synthesis returns if needed (voices, currentVoice, pause, resume, cancel etc.)
@@ -71,7 +72,7 @@ export function useVoiceNavigation() {
       ? '欢迎来到大都会博物馆导览。我是您的虚拟导游，您可以询问我任何关于展品或参观路线的问题。'
       : 'Welcome to the Metropolitan Museum tour! I\'m your virtual guide. Ask me about exhibits or routes.'
     
-    synthesisSpeak(welcomeMessage)
+    synthesisTrySpeak(welcomeMessage)
       .then(() => {
         // Optional: Add logic after welcome message finishes
       })
@@ -98,7 +99,7 @@ export function useVoiceNavigation() {
     }
     
     isGuideExplaining.value = true // Set explaining state before speaking
-    synthesisSpeak(explanationText)
+    synthesisTrySpeak(explanationText)
       .then(() => {
           // Keep the store state management separate from the synthesis promise resolution
           // isGuideExplaining.value = false; // Or manage based on synthesis state if preferred
@@ -114,7 +115,7 @@ export function useVoiceNavigation() {
   // Simplified speak function using the synthesis composable
   function speak(text: string) {
       isGuideExplaining.value = true; // Set explaining state
-      synthesisSpeak(text)
+      synthesisTrySpeak(text)
         .catch(err => {
             console.error('Error during speak function:', err)
             commandError.value = 'Speech synthesis failed.'

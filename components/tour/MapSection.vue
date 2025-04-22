@@ -1,80 +1,55 @@
 <template>
-  <div class="mb-6">
-    <div class="flex justify-between items-center mb-3">
-      <h2
-        class="text-xl font-semibold"
-        v-motion
-        :initial="{ opacity: 0, y: -20 }"
-        :enter="{ opacity: 1, y: 0, transition: { duration: 0.4 } }"
-      >
-        Metropolitan Museum Map
-      </h2>
-      
-      <!-- 楼层选择器 -->
-      <div
-        class="flex space-x-2"
-        v-motion
-        :initial="{ opacity: 0 }"
-        :enter="{ opacity: 1, transition: { delay: 0.3, duration: 0.4 } }"
-      >
-        <button
-          v-for="floor in [1, 2]"
-          :key="floor"
-          class="px-3 py-1 rounded transition-all duration-200"
-          :class="currentFloor === floor ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
-          @click="$emit('update:currentFloor', floor)"
-          v-motion:tap="{ scale: 0.95 }"
-        >
-          Floor {{ floor }}
-        </button>
-      </div>
-    </div>
-    
-    <div
-      class="h-80 rounded-lg overflow-hidden mb-2 relative shadow-md"
-      v-motion
-      :initial="{ opacity: 0, scale: 0.95 }"
-      :enter="{ opacity: 1, scale: 1, transition: { delay: 0.2, duration: 0.5 } }"
-    >
-      <MuseumMap 
-        ref="mapRef"
-        :current-floor="currentFloor" 
-        @select-exhibit="$emit('exhibit-selected', $event)"
-        @map-error="handleMapError"
-      />
-      
-      <!-- 地图状态诊断 -->
-      <div v-if="mapDiagnostics.enabled" class="absolute bottom-0 right-0 bg-white bg-opacity-80 p-2 text-xs text-gray-700 max-w-xs overflow-auto max-h-32 rounded-tl shadow-md">
-        <p><strong>地图状态:</strong> {{ mapDiagnostics.status }}</p>
-        <p v-if="mapDiagnostics.error"><strong>错误:</strong> {{ mapDiagnostics.error }}</p>
-      </div>
-    </div>
-    
-    <div class="flex justify-between">
-      <div
-        class="text-sm text-gray-600"
-        v-motion
-        :initial="{ opacity: 0 }"
-        :enter="{ opacity: 1, transition: { delay: 0.4 } }"
-      >
-        <span class="font-medium">Current View:</span> {{ currentFloor === 1 ? 'First Floor' : 'Second Floor' }}
+  <div class="h-full w-full relative">
+    <div class="h-full w-full">
+      <!-- 使用图片作为主要地图 -->
+      <div class="relative w-full h-full">
+        <!-- 图片地图 -->
+        <div class="absolute inset-0 overflow-hidden">
+          <img
+            :src="currentFloorImageUrl"
+            alt="Floor map"
+            class="w-full h-full object-contain"
+            @click="onMapImageClick"
+          />
+        </div>
+        
+        <!-- 展品标记点 -->
+        <div v-for="marker in currentFloorMarkers" :key="marker.id" 
+          class="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+          :style="{ left: `${marker.x}%`, top: `${marker.y}%` }"
+          @click="selectExhibit(marker)">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200"
+            :class="[
+              highlightedMarkerId === marker.id 
+                ? 'bg-yellow-500 text-white shadow-lg scale-125 ring-4 ring-yellow-200' 
+                : 'bg-blue-500 text-white hover:scale-110'
+            ]">
+            {{ marker.label || marker.id }}
+          </div>
+        </div>
       </div>
       
-      <!-- 地图诊断切换按钮 - 仅在开发环境显示 -->
-      <button 
-        v-if="isDev"
-        @click="toggleDiagnostics" 
-        class="text-xs text-gray-500 hover:text-gray-700"
-      >
-        {{ mapDiagnostics.enabled ? '隐藏诊断' : '显示地图诊断' }}
-      </button>
+      <!-- 加载指示器 -->
+      <div v-if="!imageLoaded" 
+           class="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-50">
+        <div class="text-center">
+          <p class="text-gray-600">正在加载地图数据...</p>
+        </div>
+      </div>
+      
+      <!-- 错误提示 -->
+      <div v-if="loadError" class="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-50">
+        <div class="text-center text-red-600">
+          <p>无法加载地图数据</p>
+          <p class="text-sm">{{ loadError }}</p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import MuseumMap from '~/components/tour/MuseumMap.vue'
+import { computed, ref, watch, onMounted } from 'vue';
 
 // 定义Props
 const props = defineProps({
@@ -82,60 +57,155 @@ const props = defineProps({
     type: Number,
     default: 1
   }
-})
+});
 
-// 定义事件
-defineEmits(['update:currentFloor', 'exhibit-selected'])
+// 定义Emits
+const emit = defineEmits(['select-exhibit', 'update:currentFloor', 'map-error', 'exhibit-selected']);
 
-// 定义地图组件类型
-interface MapComponent {
-  zoomIn: () => void;
-  zoomOut: () => void;
-  highlightExhibit: (id: number) => void;
+// Refs
+const highlightedMarkerId = ref<number | null>(null);
+const loadError = ref<string | null>(null);
+const imageLoaded = ref(false);
+
+// 楼层图片URL
+const currentFloorImageUrl = computed(() => {
+  const floorId = props.currentFloor === 1 ? 'floor1' : 
+                 props.currentFloor === 2 ? 'floor2-3' : 'ground';
+  return `/data/mapdata/floor-images/${floorId}/${floorId}.png`;
+});
+
+// 模拟的展品标记点数据
+const exhibitMarkers = {
+  'ground': [
+    { id: 1, x: 50, y: 35, label: '1', name: 'Great Hall' },
+    { id: 2, x: 25, y: 55, label: '2', name: 'Egyptian Art' },
+    { id: 3, x: 75, y: 65, label: '3', name: 'Greek and Roman Art' }
+  ],
+  'floor1': [
+    { id: 4, x: 50, y: 30, label: '1', name: 'European Sculpture' },
+    { id: 5, x: 35, y: 50, label: '2', name: 'Medieval Art' },
+    { id: 6, x: 65, y: 60, label: '3', name: 'The American Wing' }
+  ],
+  'floor2-3': [
+    { id: 7, x: 25, y: 30, label: '1', name: 'Modern Art' },
+    { id: 8, x: 60, y: 35, label: '2', name: 'European Paintings' },
+    { id: 9, x: 75, y: 60, label: '3', name: 'Asian Art' }
+  ]
+};
+
+// 当前楼层的标记点
+const currentFloorMarkers = computed(() => {
+  const floorId = props.currentFloor === 1 ? 'floor1' : 
+                 props.currentFloor === 2 ? 'floor2-3' : 'ground';
+  return exhibitMarkers[floorId] || [];
+});
+
+// 图片地图点击事件
+function onMapImageClick(event: MouseEvent) {
+  if (!event.target) return;
+  
+  const rect = (event.target as HTMLElement).getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width) * 100;
+  const y = ((event.clientY - rect.top) / rect.height) * 100;
+  
+  console.log(`点击位置: ${x.toFixed(2)}%, ${y.toFixed(2)}%`);
+  
+  // 寻找最近的展品点
+  const floorId = props.currentFloor === 1 ? 'floor1' : 
+                 props.currentFloor === 2 ? 'floor2-3' : 'ground';
+  const markers = exhibitMarkers[floorId] || [];
+  
+  let closestMarker = null;
+  let minDistance = Infinity;
+  
+  markers.forEach(marker => {
+    const distance = Math.sqrt(Math.pow(marker.x - x, 2) + Math.pow(marker.y - y, 2));
+    if (distance < minDistance && distance < 10) { // 10%的点击容差
+      minDistance = distance;
+      closestMarker = marker;
+    }
+  });
+  
+  if (closestMarker) {
+    selectExhibit(closestMarker);
+  }
 }
 
-// 地图引用
-const mapRef = ref<MapComponent | null>(null)
-
-// 地图诊断状态
-const mapDiagnostics = reactive({
-  enabled: false,
-  status: '初始化中...',
-  error: null as string | null
-})
-
-// 检测是否为开发环境
-const isDev = process.env.NODE_ENV === 'development'
-
-// 处理地图错误
-function handleMapError(error: string) {
-  mapDiagnostics.error = error
-  mapDiagnostics.status = '加载失败'
-  console.error('Map error:', error)
+// 选择展品
+function selectExhibit(exhibit) {
+  // 复制展品对象，添加用户交互标记
+  const exhibitWithInteraction = {
+    ...exhibit,
+    userInteraction: true // 添加标记表示这是由用户点击触发的
+  }
+  
+  // 触发事件，传递带标记的展品对象
+  emit('exhibit-selected', exhibitWithInteraction)
 }
 
-// 切换诊断显示
-function toggleDiagnostics() {
-  mapDiagnostics.enabled = !mapDiagnostics.enabled
+// 加载图片
+function preloadImage(url: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      imageLoaded.value = true;
+      resolve();
+    };
+    img.onerror = () => {
+      imageLoaded.value = false;
+      loadError.value = `无法加载图片: ${url}`;
+      reject(new Error(`无法加载图片: ${url}`));
+    };
+    img.src = url;
+  });
 }
+
+// 监听currentFloor属性变化
+watch(() => props.currentFloor, (newFloor) => {
+  console.log(`Floor prop changed to ${newFloor}. Loading new data...`);
+  
+  const floorId = newFloor === 1 ? 'floor1' : 
+                 newFloor === 2 ? 'floor2-3' : 'ground';
+  
+  preloadImage(`/data/mapdata/floor-images/${floorId}/${floorId}.png`)
+    .catch(error => {
+      console.error('Error loading floor image:', error);
+      loadError.value = error.message;
+    });
+  
+  // 重置高亮状态
+  highlightedMarkerId.value = null;
+}, { immediate: true });
+
+// 高亮展品
+function highlightExhibit(id: number) {
+  console.log(`MapSection: Highlighting exhibit ${id}`);
+  highlightedMarkerId.value = id;
+}
+
+// 初始化
+onMounted(() => {
+  // 在初始化时预加载第一张图片
+  const floorId = props.currentFloor === 1 ? 'floor1' : 
+                 props.currentFloor === 2 ? 'floor2-3' : 'ground';
+  
+  preloadImage(`/data/mapdata/floor-images/${floorId}/${floorId}.png`)
+    .catch(error => {
+      console.error('Error loading initial floor image:', error);
+      loadError.value = error.message;
+    });
+});
 
 // 暴露方法给父组件
 defineExpose({
-  highlightExhibit: (id: number) => mapRef.value?.highlightExhibit(id),
-  zoomIn,
-  zoomOut
-})
-
-// 地图缩放功能
-function zoomIn() {
-  if (mapRef.value) {
-    mapRef.value.zoomIn()
-  }
-}
-
-function zoomOut() {
-  if (mapRef.value) {
-    mapRef.value.zoomOut()
-  }
-}
+  highlightExhibit
+});
 </script>
+
+<style>
+.floor-map-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+</style>

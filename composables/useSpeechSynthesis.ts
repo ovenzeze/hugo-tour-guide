@@ -115,8 +115,71 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
       // Cancel any ongoing speech before speaking
       window.speechSynthesis.cancel()
       
-      // Speak
-      window.speechSynthesis.speak(utterance)
+      // 语音合成必须在用户交互后才能自动播放声音
+      try {
+        // 尝试使用语音合成
+        window.speechSynthesis.speak(utterance)
+      } catch (error) {
+        reject(error)
+      }
+    })
+  }
+  
+  // 安全的语音合成，只在确保用户交互后才尝试播放
+  let hasUserInteracted = false
+  let pendingSpeech: string[] = []
+  
+  // 监听用户交互事件，用于跟踪用户是否与页面交互过
+  if (typeof window !== 'undefined') {
+    const userInteractionEvents = ['click', 'touchstart', 'keydown']
+    
+    const markUserInteracted = () => {
+      hasUserInteracted = true
+      
+      // 尝试播放之前等待的语音
+      if (pendingSpeech.length > 0) {
+        const textToSpeak = pendingSpeech.shift()
+        if (textToSpeak) speak(textToSpeak)
+      }
+      
+      // 清理事件监听器（用户只需要交互一次）
+      userInteractionEvents.forEach(event => {
+        window.removeEventListener(event, markUserInteracted)
+      })
+    }
+    
+    // 添加事件监听器
+    onMounted(() => {
+      userInteractionEvents.forEach(event => {
+        window.addEventListener(event, markUserInteracted)
+      })
+    })
+    
+    // 清除事件监听器
+    onBeforeUnmount(() => {
+      userInteractionEvents.forEach(event => {
+        window.removeEventListener(event, markUserInteracted)
+      })
+    })
+  }
+  
+  // 安全的尝试语音合成方法，会检查用户是否已交互
+  function trySpeak(text: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!text) {
+        reject(new Error('Text cannot be empty.'))
+        return
+      }
+      
+      if (hasUserInteracted) {
+        // 如果用户已经交互过，直接使用语音合成
+        speak(text).then(resolve).catch(reject)
+      } else {
+        // 如果用户尚未交互，将文本添加到待处理队列
+        console.info('Queuing speech until user interaction:', text)
+        pendingSpeech.push(text)
+        resolve() // 我们仍然解析Promise，以避免未处理的Promise错误
+      }
     })
   }
   
@@ -183,6 +246,7 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
     voices: readonly(voices),
     currentVoice: readonly(currentVoice),
     speak,
+    trySpeak, // 导出安全的语音合成方法
     pause,
     resume,
     cancel,

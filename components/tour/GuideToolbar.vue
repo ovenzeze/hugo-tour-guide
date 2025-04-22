@@ -1,121 +1,167 @@
 <template>
-  <div 
-    class="bg-opacity-95 backdrop-blur-sm shadow-lg flex items-center px-4 py-2"
-    v-motion
-    :initial="{ y: 100, opacity: 0 }"
-    :enter="{ y: 0, opacity: 1, transition: { type: 'spring', stiffness: 300, damping: 25 } }"
-  >
-    <!-- 左侧按钮组 -->
-    <div class="flex space-x-2">
-      <button 
-        class="flex items-center justify-center h-10 w-10 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-        @click="$emit('open-guide-dialog')"
-        title="Ask Guide"
-        v-motion:hover="{ scale: 1.05 }"
-        v-motion:tap="{ scale: 0.95 }"
-      >
-        <span class="material-icons">question_answer</span>
-      </button>
-    </div>
-    
-    <!-- 中央导游状态 -->
-    <div class="flex-1 flex justify-center">
-      <div class="flex items-center" v-if="isGuideExplaining || isListening">
-        <GuideAvatar :speaking="isGuideExplaining" class="mr-2" />
-        <div 
-          class="text-sm font-medium" 
-          :class="isGuideExplaining ? 'text-green-600' : 'text-blue-600'"
-          v-motion
-          :initial="{ opacity: 0, y: 10 }"
-          :enter="{ opacity: 1, y: 0, transition: { delay: 0.2 } }"
-        >
-          {{ isGuideExplaining ? 'Guide is speaking...' : isListening ? 'Listening...' : '' }}
+  <div class="fixed bottom-0 left-0 right-0 h-16 bg-white bg-opacity-90 backdrop-blur-sm shadow-lg z-50">
+    <div class="flex items-center justify-between px-4 h-full max-w-screen-xl mx-auto">
+      <!-- 导游头像 -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center overflow-hidden relative">
+          <!-- 使用内联SVG代替图片 -->
+          <div class="flex items-center justify-center text-white">
+            <span class="material-icons text-xl">person</span>
+          </div>
+          <!-- 语音波浪动画 -->
+          <div v-if="isSpeaking" class="absolute inset-0 flex items-center justify-center">
+            <div class="voice-wave"></div>
+          </div>
         </div>
+        <div class="text-sm text-gray-700 font-medium">Tour Guide</div>
       </div>
-    </div>
-    
-    <!-- 右侧语音按钮 -->
-    <div class="relative">
-      <button
-        class="flex items-center justify-center h-11 w-11 bg-blue-600 rounded-full shadow-md text-white cursor-pointer overflow-hidden transition-all"
-        @mousedown="startVoiceCapture"
-        @mouseup="stopVoiceCapture"
-        @touchstart="startVoiceCapture"
-        @touchend="stopVoiceCapture"
-        @mouseout="cancelVoiceIfNeeded"
-        v-motion:active="{ scale: 0.95 }"
-        v-motion:hover="{ scale: 1.05, boxShadow: '0 4px 12px rgba(59, 130, 246, 0.5)' }"
-      >
-        <span v-if="!isListening" class="material-icons text-xl">mic</span>
-        <span v-else class="material-icons text-xl">mic</span>
-        
-        <!-- 录音中的波纹动画 -->
-        <div v-if="isListening" class="absolute inset-0 flex items-center justify-center">
-          <div 
-            class="absolute inset-0 bg-blue-400 bg-opacity-30 rounded-full"
-            v-motion
-            :animate="{ scale: [1, 1.5, 1], opacity: [0.7, 0, 0.7] }"
-            :transition="{ repeat: Infinity, duration: 1500 }"
-          ></div>
+
+      <!-- 中间状态指示 -->
+      <div v-if="statusText" class="text-center text-sm text-gray-600 flex-1 px-4 truncate">
+        {{ statusText }}
+      </div>
+
+      <!-- 右侧操作按钮 -->
+      <div class="flex items-center space-x-3">
+        <!-- 楼层切换按钮 -->
+        <div class="flex space-x-2 items-center mr-2">
+          <button
+            v-for="floor in ['G', '1', '2-3']" 
+            :key="floor"
+            class="w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors duration-200"
+            :class="currentFloor === floor ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+            @click="changeFloor(floor)"
+          >
+            {{ floor }}
+          </button>
         </div>
-      </button>
+
+        <!-- 开始语音导览 -->
+        <button 
+          class="h-10 px-4 rounded-full bg-green-500 text-white flex items-center space-x-1 hover:bg-green-600 transition-colors duration-200"
+          @click="startTour"
+        >
+          <span class="material-icons text-sm">play_arrow</span>
+          <span>Guide</span>
+        </button>
+
+        <!-- 语音询问按钮 -->
+        <button 
+          class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition-colors duration-200"
+          @touchstart="startListening"
+          @touchend="stopListening"
+          @mousedown="startListening"
+          @mouseup="stopListening"
+          @mouseleave="stopListening"
+        >
+          <span class="material-icons">{{ isListening ? 'mic' : 'mic_none' }}</span>
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { useTourStore } from '~/stores/tourStore'
-import { useVoiceNavigation } from '~/composables/useVoiceNavigation'
-import { ref, onMounted } from 'vue'
-import GuideAvatar from './GuideAvatar.vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 
-const tourStore = useTourStore()
-const { isGuideExplaining } = storeToRefs(tourStore)
-const { startListening, stopListening, isListening, transcriptText } = useVoiceNavigation()
+// 定义属性
+const props = defineProps({
+  currentFloor: {
+    type: String,
+    default: '1'
+  }
+});
 
 // 定义事件
-defineEmits(['open-guide-dialog'])
+const emit = defineEmits(['open-guide-dialog', 'update:currentFloor', 'start-tour']);
 
-// 按钮悬停状态
-const isButtonHovered = ref(false)
+// 状态变量
+const isSpeaking = ref(false);
+const isListening = ref(false);
+const statusText = ref('');
 
-// 处理语音输入
-function startVoiceCapture(event: Event) {
-  event.preventDefault()
-  isButtonHovered.value = true
-  if (!isGuideExplaining.value) {
-    startListening()
+// 开始语音导览
+function startTour() {
+  emit('start-tour');
+  isSpeaking.value = true;
+  statusText.value = 'Starting guided tour...';
+  
+  // 模拟语音结束
+  setTimeout(() => {
+    isSpeaking.value = false;
+    statusText.value = '';
+  }, 5000);
+}
+
+// 切换楼层
+function changeFloor(floor: string) {
+  emit('update:currentFloor', floor === 'G' ? 0 : 
+                             floor === '1' ? 1 : 
+                             floor === '2-3' ? 2 : 1);
+}
+
+// 开始语音识别
+function startListening() {
+  isListening.value = true;
+  statusText.value = 'Listening...';
+}
+
+// 停止语音识别
+function stopListening() {
+  if (!isListening.value) return;
+  
+  isListening.value = false;
+  emit('open-guide-dialog');
+  statusText.value = '';
+}
+
+// 检测语音合成状态
+function checkSpeechStatus() {
+  if (window.speechSynthesis) {
+    isSpeaking.value = window.speechSynthesis.speaking;
+    
+    if (isSpeaking.value) {
+      if (!statusText.value) {
+        statusText.value = 'Guide is speaking...';
+      }
+    } else if (statusText.value === 'Guide is speaking...') {
+      statusText.value = '';
+    }
   }
 }
 
-function stopVoiceCapture() {
-  stopListening()
-  isButtonHovered.value = false
-}
+// 设置语音状态检查定时器
+let statusCheckInterval: number | null = null;
 
-function cancelVoiceIfNeeded() {
-  if (isListening.value) {
-    stopListening()
+onMounted(() => {
+  statusCheckInterval = window.setInterval(checkSpeechStatus, 500);
+});
+
+onBeforeUnmount(() => {
+  if (statusCheckInterval !== null) {
+    clearInterval(statusCheckInterval);
   }
-  isButtonHovered.value = false
-}
-
-// 确保在组件销毁时停止语音识别和合成
+});
 </script>
 
 <style scoped>
-/* 移动设备上的优化 */
-@media (max-width: 640px) {
-  .border-t {
-    border-top-width: 2px;
-  }
+/* 语音波浪动画 */
+.voice-wave {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.3);
+  animation: voice-wave 1.5s infinite ease-in-out;
 }
 
-/* 在iOS环境下添加底部安全区域内边距 */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  div {
-    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom)) !important;
+@keyframes voice-wave {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
   }
 }
 </style>

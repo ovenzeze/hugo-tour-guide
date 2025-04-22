@@ -2,7 +2,53 @@
   <div class="w-full h-full">
     <!-- 使用ClientOnly包装Leaflet组件避免SSR问题 -->
     <ClientOnly>
+      <div v-if="useImageMap" class="relative w-full h-full">
+        <!-- 图片地图模式 -->
+        <div class="absolute inset-0 overflow-hidden">
+          <img
+            :src="currentFloorImageUrl"
+            alt="Floor map"
+            class="w-full h-full object-contain"
+            @click="onMapImageClick"
+          />
+        </div>
+        
+        <!-- 楼层控制器 -->
+        <div class="absolute top-2 right-2 bg-white p-2 rounded shadow z-10">
+          <div class="flex flex-col space-y-1">
+            <button
+              v-for="floor in availableFloors"
+              :key="floor.id"
+              class="px-3 py-1 rounded text-sm"
+              :class="currentFloor.toString() === floor.id 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+              @click="changeFloor(floor.id)"
+            >
+              {{ floor.name }}
+            </button>
+          </div>
+        </div>
+
+        <!-- 展品标记点 -->
+        <div v-for="marker in currentFloorMarkers" :key="marker.id" 
+          class="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+          :style="{ left: `${marker.x}%`, top: `${marker.y}%` }"
+          @click="selectExhibit(marker.id)">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center"
+            :class="[
+              highlightedMarkerId === marker.id 
+                ? 'bg-yellow-500 text-white shadow-lg scale-125' 
+                : 'bg-blue-500 text-white'
+            ]">
+            {{ marker.label || marker.id }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 原有的Leaflet地图 -->
       <LMap
+        v-else
         ref="mapRef"
         :zoom="18"
         :center="mapCenter"
@@ -47,7 +93,8 @@
       </LMap>
       
       <!-- 添加加载指示器 -->
-      <div v-if="!currentFloorGeoJson && !loadError" class="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-50">
+      <div v-if="(!currentFloorGeoJson && !loadError && !useImageMap) || (useImageMap && !imageLoaded)" 
+           class="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-50">
         <div class="text-center">
           <p class="text-gray-600">正在加载地图数据...</p>
         </div>
@@ -91,6 +138,104 @@ const defaultIcon = ref<any>(null);
 const highlightedIcon = ref<any>(null);
 const isLeafletReady = ref<boolean>(false);
 
+// 图片地图模式
+const useImageMap = ref(true); // 切换到图片地图模式
+const imageLoaded = ref(false);
+
+// 定义可用楼层
+const availableFloors = [
+  { id: 'ground', name: 'Ground Floor' },
+  { id: 'floor1', name: 'Floor 1' },
+  { id: 'floor2-3', name: 'Floor 2-3' }
+];
+
+// 楼层图片URL
+const currentFloorImageUrl = computed(() => {
+  const floorId = props.currentFloor === 1 ? 'floor1' : 
+                 props.currentFloor === 2 ? 'floor2-3' : 'ground';
+  return `/data/mapdata/floor-images/${floorId}/${floorId}.png`;
+});
+
+// 模拟的展品标记点数据
+const exhibitMarkers = {
+  'ground': [
+    { id: 1, x: 50, y: 30, label: '1', name: 'Great Hall' },
+    { id: 2, x: 20, y: 40, label: '2', name: 'Egyptian Art' },
+    { id: 3, x: 75, y: 60, label: '3', name: 'Greek and Roman Art' }
+  ],
+  'floor1': [
+    { id: 4, x: 50, y: 25, label: '1', name: 'European Sculpture' },
+    { id: 5, x: 30, y: 45, label: '2', name: 'Medieval Art' },
+    { id: 6, x: 70, y: 65, label: '3', name: 'The American Wing' }
+  ],
+  'floor2-3': [
+    { id: 7, x: 25, y: 25, label: '1', name: 'Modern Art' },
+    { id: 8, x: 60, y: 40, label: '2', name: 'European Paintings' },
+    { id: 9, x: 75, y: 60, label: '3', name: 'Asian Art' }
+  ]
+};
+
+// 当前楼层的标记点
+const currentFloorMarkers = computed(() => {
+  const floorId = props.currentFloor === 1 ? 'floor1' : 
+                 props.currentFloor === 2 ? 'floor2-3' : 'ground';
+  return exhibitMarkers[floorId] || [];
+});
+
+// 图片地图点击事件
+function onMapImageClick(event: MouseEvent) {
+  if (!event.target) return;
+  
+  const rect = (event.target as HTMLElement).getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width) * 100;
+  const y = ((event.clientY - rect.top) / rect.height) * 100;
+  
+  console.log(`点击位置: ${x.toFixed(2)}%, ${y.toFixed(2)}%`);
+  
+  // 寻找最近的展品点
+  const floorId = props.currentFloor === 1 ? 'floor1' : 
+                 props.currentFloor === 2 ? 'floor2-3' : 'ground';
+  const markers = exhibitMarkers[floorId] || [];
+  
+  let closestMarker = null;
+  let minDistance = Infinity;
+  
+  markers.forEach(marker => {
+    const distance = Math.sqrt(Math.pow(marker.x - x, 2) + Math.pow(marker.y - y, 2));
+    if (distance < minDistance && distance < 10) { // 10%的点击容差
+      minDistance = distance;
+      closestMarker = marker;
+    }
+  });
+  
+  if (closestMarker) {
+    selectExhibit(closestMarker.id);
+  }
+}
+
+// 选择展品
+function selectExhibit(id: number) {
+  highlightedMarkerId.value = id;
+  emit('select-exhibit', { id });
+}
+
+// 加载图片
+function preloadImage(url: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      imageLoaded.value = true;
+      resolve();
+    };
+    img.onerror = () => {
+      imageLoaded.value = false;
+      loadError.value = `无法加载图片: ${url}`;
+      reject(new Error(`无法加载图片: ${url}`));
+    };
+    img.src = url;
+  });
+}
+
 // Map center computed property based on the current floor
 const mapCenter = computed((): LatLngExpression => {
   // 使用标准经纬度格式 [纬度, 经度]
@@ -133,11 +278,22 @@ const onMapReady = () => {
   }
 }
 
-// 初始化图标 - 已移除不需要的函数，由Leaflet组件内部处理
-
 // 切换楼层
-function changeFloor(floor: number) {
-  emit('update:currentFloor', floor);
+function changeFloor(floor: number | string) {
+  emit('update:currentFloor', typeof floor === 'string' ? floor : floor);
+  
+  if (useImageMap.value) {
+    // 在图片模式下预加载图片
+    const floorId = floor.toString();
+    preloadImage(`/data/mapdata/floor-images/${floorId}/${floorId}.png`)
+      .catch(error => {
+        console.error('Error loading floor image:', error);
+        loadError.value = error.message;
+      });
+  } else if (leafletMap.value && isLeafletReady.value) {
+    // 在楼层变化时将地图平移到新的中心
+    leafletMap.value.panTo(mapCenter.value);
+  }
 }
 
 // GeoJSON加载函数
@@ -199,16 +355,31 @@ async function loadGeoJSON(floor: number) {
 
 // 监听currentFloor属性变化
 watch(() => props.currentFloor, (newFloor) => {
-  console.log(`Floor prop changed to ${newFloor}. Loading new GeoJSON...`);
+  console.log(`Floor prop changed to ${newFloor}. Loading new data...`);
   
-  // 加载新的GeoJSON数据
-  loadGeoJSON(newFloor);
-  
-  // 在楼层变化时将地图平移到新的中心
-  if (leafletMap.value && isLeafletReady.value) {
-    leafletMap.value.panTo(mapCenter.value);
+  if (useImageMap.value) {
+    // 在图片模式下不需要加载GeoJSON
+    const floorId = newFloor === 1 ? 'floor1' : 
+                   newFloor === 2 ? 'floor2-3' : 'ground';
+    
+    preloadImage(`/data/mapdata/floor-images/${floorId}/${floorId}.png`)
+      .catch(error => {
+        console.error('Error loading floor image:', error);
+        loadError.value = error.message;
+      });
+    
+    // 重置高亮状态
+    highlightedMarkerId.value = null;
+  } else {
+    // 加载新的GeoJSON数据
+    loadGeoJSON(newFloor);
+    
+    // 在楼层变化时将地图平移到新的中心
+    if (leafletMap.value && isLeafletReady.value) {
+      leafletMap.value.panTo(mapCenter.value);
+    }
   }
-}, { immediate: false });
+}, { immediate: true });
 
 // GeoJSON样式函数
 const geoJsonStyle = (feature: any) => {
@@ -248,32 +419,85 @@ const geoJsonOptions = computed(() => ({
 
 // 高亮展品
 function highlightExhibit(id: number) {
-  if (!isLeafletReady.value) return;
   console.log(`MuseumMap: Highlighting exhibit ${id}`);
+  
+  if (useImageMap.value) {
+    // 在图片模式下直接设置高亮ID
+    highlightedMarkerId.value = id;
+    return;
+  }
+  
+  // Reset previously highlighted marker
+  if (highlightedMarkerId.value !== null && markerLayers.value[highlightedMarkerId.value]) {
+    try {
+      markerLayers.value[highlightedMarkerId.value].setIcon(defaultIcon.value);
+    } catch (e) { console.error("Error resetting previous marker icon:", e); }
+  } else if (highlightedMarkerId.value !== null) {
+    console.warn(`Previous highlighted marker ${highlightedMarkerId.value} not found in layers.`);
+  }
+
+  // Highlight the new marker
+  const targetMarker = markerLayers.value[id];
+  if (targetMarker) {
+    try {
+      targetMarker.setIcon(highlightedIcon.value);
+      highlightedMarkerId.value = id;
+      // Optional: Pan map to the highlighted marker smoothly
+      if (leafletMap.value) {
+        leafletMap.value.flyTo(targetMarker.getLatLng(), leafletMap.value.getZoom()); // Use flyTo for smoother transition
+      }
+    } catch (e) { console.error(`Error setting highlighted icon for marker ${id}:`, e); }
+  } else {
+    console.warn(`Marker with ID ${id} not found.`);
+    highlightedMarkerId.value = null; // Ensure no ID is tracked if marker not found
+  }
 }
 
 // 缩放功能
 function zoomIn() {
-  if (!isLeafletReady.value || !leafletMap.value) {
-    console.warn('Zoom In called before map instance is ready.');
+  if (useImageMap.value) {
+    // 在图片模式下不支持缩放
+    console.warn('Zoom not supported in image mode');
     return;
   }
   
-  console.log('MuseumMap: Executing Zoom In');
-  leafletMap.value.zoomIn();
+  if (leafletMap.value && isLeafletReady.value) {
+    leafletMap.value.zoomIn();
+  } else {
+    console.warn('Zoom In called before map instance is ready.');
+  }
 }
 
 function zoomOut() {
-  if (!isLeafletReady.value || !leafletMap.value) {
-    console.warn('Zoom Out called before map instance is ready.');
+  if (useImageMap.value) {
+    // 在图片模式下不支持缩放
+    console.warn('Zoom not supported in image mode');
     return;
   }
   
-  console.log('MuseumMap: Executing Zoom Out');
-  leafletMap.value.zoomOut();
+  if (leafletMap.value && isLeafletReady.value) {
+    leafletMap.value.zoomOut();
+  } else {
+    console.warn('Zoom Out called before map instance is ready.');
+  }
 }
 
-// 暴露方法给父组件（MapSection）调用
+// 初始化
+onMounted(() => {
+  if (useImageMap.value) {
+    // 在图片模式下预加载第一张图片
+    const floorId = props.currentFloor === 1 ? 'floor1' : 
+                   props.currentFloor === 2 ? 'floor2-3' : 'ground';
+    
+    preloadImage(`/data/mapdata/floor-images/${floorId}/${floorId}.png`)
+      .catch(error => {
+        console.error('Error loading initial floor image:', error);
+        loadError.value = error.message;
+      });
+  }
+});
+
+// 暴露方法给父组件
 defineExpose({
   highlightExhibit,
   zoomIn,
@@ -283,4 +507,17 @@ defineExpose({
 
 <style>
 /* 可以在这里添加自定义样式，确保地图容器有合适的尺寸和外观 */
+.floor-map-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.marker-container {
+  transition: all 0.3s ease;
+}
+
+.marker-container:hover {
+  transform: scale(1.2);
+}
 </style>
