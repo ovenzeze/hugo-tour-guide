@@ -1,28 +1,30 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount, readonly } from 'vue'
 
 /**
- * 检测应用是否以PWA模式运行（从主屏幕启动）
+ * Detects if the application is running in PWA mode (launched from the home screen).
  * 
- * @returns {Object} 包含isPwa的响应式引用和更新函数
+ * @returns {Object} An object containing a readonly ref `isPwa` and an update function `checkPwaStatus`.
  */
 export function usePwa() {
   const isPwa = ref(false)
+  let mediaQuery: MediaQueryList | null = null // Store the media query instance
 
-  // 初始检测函数
+  // Initial detection function
   const checkPwaStatus = () => {
-    // iOS Safari 专用属性
+    // Check only on the client-side
     if (typeof window !== 'undefined' && window.navigator) {
-      if ('standalone' in window.navigator) {
-        isPwa.value = window.navigator.standalone === true
+      // iOS Safari specific property
+      if ('standalone' in window.navigator && typeof window.navigator.standalone === 'boolean') {
+        isPwa.value = window.navigator.standalone
       } else if (window.matchMedia) {
-        // 其他浏览器使用 matchMedia API
+        // Other browsers use the matchMedia API
         isPwa.value = window.matchMedia('(display-mode: standalone)').matches ||
                       window.matchMedia('(display-mode: fullscreen)').matches
       }
     }
   }
 
-  // 监听显示模式变化的函数
+  // Handler for display mode changes
   const displayModeHandler = (evt: MediaQueryListEvent) => {
     isPwa.value = evt.matches
   }
@@ -30,23 +32,24 @@ export function usePwa() {
   onMounted(() => {
     checkPwaStatus()
 
-    // 添加 display-mode 变化的监听器
+    // Add listener for display-mode changes on client-side
     if (typeof window !== 'undefined' && window.matchMedia) {
-      const mediaQuery = window.matchMedia('(display-mode: standalone)')
+      // Check both standalone and fullscreen
+      mediaQuery = window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)')
       mediaQuery.addEventListener('change', displayModeHandler)
     }
   })
 
-  onUnmounted(() => {
-    // 移除监听器，避免内存泄漏
-    if (typeof window !== 'undefined' && window.matchMedia) {
-      const mediaQuery = window.matchMedia('(display-mode: standalone)')
+  onBeforeUnmount(() => { // Changed from onUnmounted
+    // Remove the listener using the stored instance
+    if (mediaQuery) {
       mediaQuery.removeEventListener('change', displayModeHandler)
+      mediaQuery = null // Clean up the stored instance
     }
   })
 
   return {
-    isPwa,
+    isPwa: readonly(isPwa), // Make state readonly
     checkPwaStatus
   }
 } 

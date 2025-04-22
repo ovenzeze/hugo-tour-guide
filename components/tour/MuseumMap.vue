@@ -118,7 +118,7 @@ const onMapReady = () => {
         console.log('Map zoom:', leafletMap.value.getZoom());
         
         // 加载当前楼层数据
-        loadGeoJson(props.currentFloor);
+        loadGeoJSON(props.currentFloor);
       } else {
         throw new Error('leafletObject is undefined in mapRef');
       }
@@ -141,7 +141,7 @@ function changeFloor(floor: number) {
 }
 
 // GeoJSON加载函数
-async function loadGeoJson(floor: number) {
+async function loadGeoJSON(floor: number) {
   // 重置错误状态
   loadError.value = null;
   
@@ -151,8 +151,8 @@ async function loadGeoJson(floor: number) {
   console.log(`Reset markers for floor ${floor}`);
 
   try {
-    // 使用fetch API加载GeoJSON数据
-    const mapUrl = `/assets/mapdata/floor${floor}.geojson`;
+    // Update path to data directory
+    const mapUrl = `/data/mapdata/floor${floor}.geojson`;
     console.log(`Attempting to load map data from: ${mapUrl}`);
     
     const response = await fetch(mapUrl);
@@ -202,7 +202,7 @@ watch(() => props.currentFloor, (newFloor) => {
   console.log(`Floor prop changed to ${newFloor}. Loading new GeoJSON...`);
   
   // 加载新的GeoJSON数据
-  loadGeoJson(newFloor);
+  loadGeoJSON(newFloor);
   
   // 在楼层变化时将地图平移到新的中心
   if (leafletMap.value && isLeafletReady.value) {

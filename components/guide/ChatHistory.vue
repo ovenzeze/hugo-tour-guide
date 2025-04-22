@@ -30,7 +30,7 @@
         <!-- AI avatar (only shown for AI messages) -->
         <div v-if="message.sender === 'ai'" class="flex-shrink-0 mr-2">
           <Avatar class="size-8 border border-primary/10">
-            <AvatarImage src="/assets/images/guide/ai-avatar.png" alt="AI Guide" />
+            <AvatarImage src="/images/guide/ai-avatar.png" alt="AI Guide" />
             <AvatarFallback class="bg-primary-50 text-primary-900 text-xs">AI</AvatarFallback>
           </Avatar>
         </div>

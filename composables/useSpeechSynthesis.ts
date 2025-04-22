@@ -1,4 +1,4 @@
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, reactive, watch, readonly } from 'vue'
 
 interface UseSpeechSynthesisOptions {
   lang?: string
@@ -14,7 +14,7 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
   const voices = ref<SpeechSynthesisVoice[]>([])
   const currentVoice = ref<SpeechSynthesisVoice | null>(null)
   
-  // 默认配置
+  // Default options
   const defaultOptions = {
     lang: 'zh-CN',
     rate: 1.0,
@@ -22,57 +22,78 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
     volume: 1.0
   }
   
-  const mergedOptions = { ...defaultOptions, ...options }
+  // Use reactive for options to handle potential dynamic changes
+  const reactiveOptions = reactive({ ...defaultOptions, ...options })
+
+  // Watch for external option changes
+  watch(() => options, (newOptions) => {
+    Object.assign(reactiveOptions, { ...defaultOptions, ...newOptions })
+  }, { deep: true })
   
-  onMounted(() => {
-    // 检查浏览器是否支持语音合成
-    if ('speechSynthesis' in window) {
-      isSupported.value = true
-      
-      // 获取可用的语音列表
-      loadVoices()
-      
-      // 如果语音列表初始为空，等待voiceschanged事件
-      if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        window.speechSynthesis.onvoiceschanged = loadVoices
-      }
-    }
-  })
-  
-  // 加载语音列表
-  function loadVoices() {
+  // Load voices function
+  const loadVoices = () => {
     voices.value = window.speechSynthesis.getVoices()
-    
-    // 设置默认语音为匹配语言的第一个语音
+    // Set default voice based on the reactive lang option
     if (voices.value.length > 0) {
-      const matchingVoices = voices.value.filter(voice => voice.lang.startsWith(mergedOptions.lang))
+      const matchingVoices = voices.value.filter(voice => voice.lang.startsWith(reactiveOptions.lang))
       currentVoice.value = matchingVoices.length > 0 ? matchingVoices[0] : voices.value[0]
     }
   }
+
+  onMounted(() => {
+    // Ensure code runs only on the client-side
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      isSupported.value = true
+      
+      // Get available voices
+      loadVoices()
+      
+      // Listen for voice list changes if initially empty
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = loadVoices
+      }
+    } else {
+      isSupported.value = false;
+    }
+  })
   
-  // 播放文本
+  // Remove event listener on unmount
+  onBeforeUnmount(() => {
+    if (isSupported.value && window.speechSynthesis.onvoiceschanged !== undefined) {
+       window.speechSynthesis.onvoiceschanged = null // Clean up listener
+    }
+    if (isSpeaking.value) {
+      cancel()
+    }
+  })
+  
+  // Speak text
   function speak(text: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (!isSupported.value || !text) {
-        reject('语音合成不受支持或文本为空')
+      if (!isSupported.value) {
+        reject(new Error('Speech synthesis is not supported by this browser.'))
+        return
+      }
+      if (!text) {
+        reject(new Error('Text cannot be empty.'))
         return
       }
       
-      // 创建语音合成话语
+      // Create utterance
       const utterance = new SpeechSynthesisUtterance(text)
       
-      // 应用设置
-      utterance.lang = mergedOptions.lang
-      utterance.rate = mergedOptions.rate
-      utterance.pitch = mergedOptions.pitch
-      utterance.volume = mergedOptions.volume
+      // Apply settings from reactive options
+      utterance.lang = reactiveOptions.lang
+      utterance.rate = reactiveOptions.rate
+      utterance.pitch = reactiveOptions.pitch
+      utterance.volume = reactiveOptions.volume
       
-      // 设置语音
+      // Set voice
       if (currentVoice.value) {
         utterance.voice = currentVoice.value
       }
       
-      // 事件处理
+      // Event handlers
       utterance.onstart = () => {
         isSpeaking.value = true
         isPaused.value = false
@@ -84,72 +105,91 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
         resolve()
       }
       
-      utterance.onerror = (error) => {
-        console.error('语音合成错误:', error)
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event.error)
         isSpeaking.value = false
         isPaused.value = false
-        reject(error)
+        reject(new Error(`Speech synthesis error: ${event.error}`)) // Provide more specific error
       }
       
-      // 在播放前取消所有正在进行的语音
+      // Cancel any ongoing speech before speaking
       window.speechSynthesis.cancel()
       
-      // 播放
+      // Speak
       window.speechSynthesis.speak(utterance)
     })
   }
   
-  // 暂停播放
+  // Pause speech
   function pause() {
-    if (isSpeaking.value && !isPaused.value) {
+    if (isSpeaking.value && !isPaused.value && isSupported.value) {
       window.speechSynthesis.pause()
       isPaused.value = true
     }
   }
   
-  // 恢复播放
+  // Resume speech
   function resume() {
-    if (isPaused.value) {
+    if (isPaused.value && isSupported.value) {
       window.speechSynthesis.resume()
       isPaused.value = false
     }
   }
   
-  // 取消当前播放
+  // Cancel speech
   function cancel() {
-    window.speechSynthesis.cancel()
+     if (isSupported.value) {
+        window.speechSynthesis.cancel()
+     }
     isSpeaking.value = false
     isPaused.value = false
   }
   
-  // 设置语音
+  // Set voice
   function setVoice(voice: SpeechSynthesisVoice) {
     currentVoice.value = voice
+    // Optionally update reactiveOptions lang if needed, or keep them separate
+    // reactiveOptions.lang = voice.lang;
   }
   
-  // 更改语速
+  // Set rate
   function setRate(rate: number) {
-    mergedOptions.rate = rate
+    reactiveOptions.rate = rate
   }
   
-  // 在组件销毁时清理
-  onBeforeUnmount(() => {
-    if (isSpeaking.value) {
-      cancel()
-    }
-  })
-  
+  // Set pitch
+  function setPitch(pitch: number) {
+    reactiveOptions.pitch = pitch
+  }
+
+  // Set volume
+  function setVolume(volume: number) {
+    reactiveOptions.volume = volume
+  }
+
+  // Set Language
+  function setLang(lang: string) {
+      reactiveOptions.lang = lang
+      // Optionally reload/reset voice after lang change
+      if(isSupported.value) loadVoices();
+  }
+
+  // Cleanup logic moved to onBeforeUnmount
+
   return {
-    isSupported,
-    isSpeaking,
-    isPaused,
-    voices,
-    currentVoice,
+    isSupported: readonly(isSupported), // Make support status readonly
+    isSpeaking: readonly(isSpeaking),
+    isPaused: readonly(isPaused),
+    voices: readonly(voices),
+    currentVoice: readonly(currentVoice),
     speak,
     pause,
     resume,
     cancel,
     setVoice,
-    setRate
+    setRate,
+    setPitch, // Expose pitch setter
+    setVolume, // Expose volume setter
+    setLang // Expose lang setter
   }
 }

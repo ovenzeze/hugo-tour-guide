@@ -1,0 +1,70 @@
+<template>
+  <Teleport to="body">
+    <Transition name="overlay">
+      <div 
+        v-if="modelValue" 
+        class="fixed inset-0 bg-black bg-opacity-50 z-50"
+        @click="$emit('update:modelValue', false)"
+      ></div>
+    </Transition>
+    
+    <Transition name="drawer">
+      <div 
+        v-if="modelValue" 
+        class="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-lg z-50 max-h-[90vh] overflow-auto"
+        :class="[fullscreen ? 'min-h-[90vh]' : '']"
+      >
+        <!-- 顶部拖动条 -->
+        <div class="flex justify-center py-2">
+          <div class="w-12 h-1 bg-gray-300 rounded-full"></div>
+        </div>
+        
+        <!-- 内容区域 -->
+        <div class="px-4 pb-safe">
+          <slot></slot>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+
+<script setup lang="ts">
+defineProps({
+  modelValue: {
+    type: Boolean,
+    required: true
+  },
+  fullscreen: {
+    type: Boolean,
+    default: false
+  }
+})
+
+defineEmits(['update:modelValue'])
+</script>
+
+<style>
+.overlay-enter-active,
+.overlay-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.overlay-enter-from,
+.overlay-leave-to {
+  opacity: 0;
+}
+
+.drawer-enter-active,
+.drawer-leave-active {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawer-enter-from,
+.drawer-leave-to {
+  transform: translateY(100%);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 1rem);
+}
+</style>

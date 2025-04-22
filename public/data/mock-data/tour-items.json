@@ -1,0 +1,74 @@
+[
+  {
+    "id": "metropolitan-nyc",
+    "name": "Metropolitan Museum of Art",
+    "cover": "https://source.unsplash.com/600x400/?museum,metropolitan&id=metropolitan-nyc",
+    "desc": "World-class art collection",
+    "tags": ["Art", "History"],
+    "distance": 5.0,
+    "rating": 4.8,
+    "favorite": false,
+    "type": "museum",
+    "region": "downtown"
+  },
+  {
+    "id": "amnh-nyc",
+    "name": "American Museum of Natural History",
+    "cover": "https://source.unsplash.com/600x400/?museum,natural&id=amnh",
+    "desc": "Natural history and science exhibits",
+    "tags": ["Science", "History"],
+    "distance": 5.2,
+    "rating": 4.7,
+    "favorite": false,
+    "type": "museum",
+    "region": "downtown"
+  },
+  {
+    "id": "nmnh-dc",
+    "name": "National Museum of Natural History",
+    "cover": "https://source.unsplash.com/600x400/?museum,natural,history,washington&id=nmnh-dc",
+    "desc": "Extensive natural history collection",
+    "tags": ["Science", "Nature"],
+    "distance": 3.5,
+    "rating": 4.6,
+    "favorite": false,
+    "type": "museum",
+    "region": "downtown"
+  },
+  {
+    "id": "louvre-paris",
+    "name": "Louvre Museum",
+    "cover": "https://source.unsplash.com/600x400/?museum,louvre&id=louvre-paris",
+    "desc": "Home to the Mona Lisa and Venus de Milo",
+    "tags": ["Art", "History"],
+    "distance": 10.0,
+    "rating": 4.9,
+    "favorite": false,
+    "type": "museum",
+    "region": "downtown"
+  },
+  {
+    "id": "vatican-museums",
+    "name": "Vatican Museums",
+    "cover": "https://source.unsplash.com/600x400/?museum,vatican&id=vatican-museums",
+    "desc": "Art and history of the Vatican, including the Sistine Chapel",
+    "tags": ["Art", "Religion"],
+    "distance": 12.0,
+    "rating": 4.8,
+    "favorite": false,
+    "type": "museum",
+    "region": "downtown"
+  },
+  {
+    "id": "british-london",
+    "name": "British Museum",
+    "cover": "https://source.unsplash.com/600x400/?museum,british,london&id=british-london",
+    "desc": "Global art and antiquities collection",
+    "tags": ["History", "Culture"],
+    "distance": 8.0,
+    "rating": 4.7,
+    "favorite": false,
+    "type": "museum",
+    "region": "downtown"
+  }
+]

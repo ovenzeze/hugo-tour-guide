@@ -99,7 +99,7 @@
 
 <script setup lang="ts">
 import { Icon } from '#components'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useMotion } from '@vueuse/motion'
 import { Alert } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
@@ -108,6 +108,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Checkbox } from '~/components/ui/checkbox'
 import { Combobox } from '~/components/ui/combobox'
 import { Select } from '~/components/ui/select'
+import { useAsyncData } from '#app'
 
 const typeOptions = [
   { label: 'All', value: '' }, { label: 'Museum', value: 'museum' }, { label: 'Local', value: 'local' }
@@ -125,7 +126,7 @@ const selectedTime = ref('')
 
 // 定义项目类型
 interface TourItem {
-  id: number
+  id: string
   name: string
   cover: string
   desc: string
@@ -137,33 +138,43 @@ interface TourItem {
   region: string
 }
 
-// mock数据，图片全部使用unsplash公开可访问资源
-const items = ref<TourItem[]>([])
+// 使用 useAsyncData 加载数据
+const { data: items, pending, error } = await useAsyncData<TourItem[]>(
+  'tour-items',
+  async () => {
+    try {
+      const data = await $fetch<TourItem[]>('/mock-data/tour-items.json')
+      return data
+    } catch (e) {
+      console.error('Error fetching tour items with useAsyncData:', e)
+      return []
+    }
+  },
+  { 
+    default: () => [],
+  }
+)
 
-onMounted(() => {
-  // 模拟API请求
-  setTimeout(() => {
-    items.value = [
-      { id: 1, name: 'City Museum', cover: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=600&q=80', desc: 'Art & History', tags: ['Family', 'Art'], distance: 1.2, rating: 4.7, favorite: false, type: 'museum', region: 'downtown' },
-      { id: 2, name: 'Local Pottery Class', cover: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80', desc: 'Hands-on Experience', tags: ['DIY'], distance: 2.3, rating: 4.9, favorite: true, type: 'local', region: 'suburb' },
-      { id: 3, name: 'Science Center', cover: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=600&q=80', desc: 'Interactive Science', tags: ['Kids', 'Tech'], distance: 0.8, rating: 4.6, favorite: false, type: 'museum', region: 'downtown' },
-      { id: 4, name: 'Street Art Walk', cover: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=600&q=80', desc: 'Outdoor Art Tour', tags: ['Art', 'Outdoor'], distance: 3.1, rating: 4.8, favorite: false, type: 'local', region: 'downtown' },
-      { id: 5, name: 'History Museum', cover: 'https://images.unsplash.com/photo-1468449032589-876ed4b3eafe?auto=format&fit=crop&w=600&q=80', desc: 'Local History', tags: ['History'], distance: 2.6, rating: 4.5, favorite: false, type: 'museum', region: 'suburb' },
-      { id: 6, name: 'Cooking Workshop', cover: 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=600&q=80', desc: 'Taste & Learn', tags: ['Food', 'DIY'], distance: 1.9, rating: 4.9, favorite: false, type: 'local', region: 'suburb' }
-    ]
-  }, 400)
-})
+// 处理加载错误 (可选)
+if (error.value) {
+  console.error('Failed to load tour items:', error.value)
+}
 
 const filteredList = computed(() => {
-  return items.value.filter(item =>
+  const currentItems = Array.isArray(items.value) ? items.value : [];
+  return currentItems.filter((item: TourItem) =>
     (!selectedType.value || item.type === selectedType.value) &&
     (!selectedRegion.value || item.region === selectedRegion.value) &&
-    (!selectedTime.value || selectedTime.value === 'open') && // 可扩展时间筛选逻辑
+    (!selectedTime.value || selectedTime.value === 'open') && 
     (!onlyFavorite.value || item.favorite)
   )
 })
+
 function toggleFavorite(item: TourItem) {
-  item.favorite = !item.favorite
+  const targetItem = items.value?.find((i: TourItem) => i.id === item.id);
+  if (targetItem) {
+     targetItem.favorite = !targetItem.favorite;
+  }
 }
 
 // 导航到详情页

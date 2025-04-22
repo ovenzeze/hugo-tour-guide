@@ -41,7 +41,6 @@
 </template>
 
 <script setup lang="ts">
-import { PropType } from 'vue'
 
 // 定义展品类型
 interface Exhibit {

@@ -1,18 +1,26 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
 import tailwindcss from '@tailwindcss/vite'
 import { defineNuxtConfig } from 'nuxt/config'
+
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
+  ssr: false,
   runtimeConfig: {
-    // 服务器端可用的私有键
     postgresUrl: process.env.POSTGRES_URL,
-    // 可以暴露给客户端的公共键
-    public: {
-      // postgresUrl: process.env.POSTGRES_URL
-    }
+    public: {}
   },
-  devtools: { enabled: false },
+  devtools: { enabled: true },
   css: ['~/assets/css/tailwind.css'],
+
+  // 添加组件自动导入配置
+  components: {
+    dirs: [
+      {
+        path: '~/components',
+        // 排除ui组件文件夹内的index.ts文件
+        ignore: ['**/*/index.ts']
+      }
+    ]
+  },
 
   vite: {
     plugins: [
@@ -27,16 +35,29 @@ export default defineNuxtConfig({
     preset: 'vercel'
   },
 
+
+
+
   // 已移除content配置
   modules: [
-    'shadcn-nuxt',
-    "@nuxtjs/google-fonts",
-    '@nuxt/icon',
+    '@vueuse/nuxt',
     '@vueuse/motion/nuxt',
+    '@nuxtjs/google-fonts',
+    '@pinia/nuxt',
+    '@nuxt/icon',
     '@vite-pwa/nuxt',
     '@nuxtjs/leaflet',
     '@nuxtjs/mdc'
   ],
+
+  motion: {
+    directives: {
+      // 启用默认的motion指令
+      'motion': true,
+      'motion-fade': true,
+      'motion-pop': true
+    }
+  },
 
 
   // MDC模块配置
@@ -46,9 +67,11 @@ export default defineNuxtConfig({
       theme: 'github-dark'
     }
   },
+  // Google Fonts 配置
   googleFonts: {
+    // @ts-ignore
     families: {
-      Inter: [400, 700],
+      "Inter": [400, 700],
       "Crimson Text": [400, 600, 700],
       "Noto Sans SC": [400, 600],
     },
@@ -68,16 +91,15 @@ export default defineNuxtConfig({
         { name: 'theme-color', content: '#ffffff' }
       ],
       link: [
-        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
-        { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' },
-        { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16x16.png' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/images/icons/favicons/apple-touch-icon.png' },
+        { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/images/icons/favicons/favicon-32x32.png' },
+        { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/images/icons/favicons/favicon-16x16.png' },
         { rel: 'manifest', href: '/manifest.json' },
-        { rel: 'mask-icon', href: '/safari-pinned-tab.svg', color: '#5bbad5' }
+        { rel: 'mask-icon', href: '/images/icons/favicons/safari-pinned-tab.svg', color: '#5bbad5' }
       ]
     }
   },
   plugins: [
-    '~/plugins/pinia',
   ],
   shadcn: {
     prefix: '',
@@ -87,35 +109,33 @@ export default defineNuxtConfig({
     registerType: 'autoUpdate',
     manifest: {
       name: 'Hugo Tour Guide',
-      short_name: 'Hugo',
+      short_name: 'HugoGuide',
       description: 'Hugo Tour Guide App',
       theme_color: '#ffffff',
       background_color: '#ffffff',
       display: 'standalone',
       orientation: 'portrait',
-      lang: 'zh',
+      lang: 'en',
       start_url: '/?source=pwa',
       icons: [
         {
-          src: '/android-chrome-192x192.png',
+          src: '/images/icons/favicons/android-chrome-192x192.png',
           sizes: '192x192',
-          type: 'image/png',
-          purpose: 'any'
+          type: 'image/png'
         },
         {
-          src: '/android-chrome-512x512.png',
+          src: '/images/icons/favicons/android-chrome-512x512.png',
           sizes: '512x512',
-          type: 'image/png',
-          purpose: 'any'
+          type: 'image/png'
         },
         {
-          src: '/apple-touch-icon.png',
+          src: '/images/icons/favicons/apple-touch-icon.png',
           sizes: '180x180',
           type: 'image/png',
           purpose: 'apple touch icon'
         },
         {
-          src: '/maskable-icon.png',
+          src: '/images/icons/favicons/maskable-icon.png',
           sizes: '512x512',
           type: 'image/png',
           purpose: 'maskable'
@@ -126,11 +146,16 @@ export default defineNuxtConfig({
       navigateFallback: '/',
       globPatterns: ['**/*.{js,css,html,png,svg,ico}']
     },
+    client: {
+      installPrompt: true,
+      periodicSyncForUpdates: 20
+    },
     devOptions: {
       enabled: true,
       suppressWarnings: true,
-      navigateFallbackAllowlist: [/^\//],  // 匹配所有以/开头的路径
+      navigateFallback: '/',
+      navigateFallbackAllowlist: [/.*\/$/],
       type: 'module'
-    }
+    },
   }
 })

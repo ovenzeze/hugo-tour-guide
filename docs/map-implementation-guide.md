@@ -97,22 +97,22 @@ let highlightedIcon: any = null;
 // 在客户端初始化图标
 if (process.client && L) {
   defaultIcon = L.icon({
-    iconUrl: '/icons/marker-icon-blue.png',
-    iconRetinaUrl: '/icons/marker-icon-blue-2x.png',
+    iconUrl: '/images/icons/markers/marker-icon-blue.png',
+    iconRetinaUrl: '/images/icons/markers/marker-icon-blue-2x.png',
     iconSize: [25, 41],
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],
-    shadowUrl: '/icons/marker-shadow.png',
+    shadowUrl: '/images/icons/markers/marker-shadow.png',
     shadowSize: [41, 41]
   });
 
   highlightedIcon = L.icon({
-    iconUrl: '/icons/marker-icon-red.png',
-    iconRetinaUrl: '/icons/marker-icon-red-2x.png',
+    iconUrl: '/images/icons/markers/marker-icon-red.png',
+    iconRetinaUrl: '/images/icons/markers/marker-icon-red-2x.png',
     iconSize: [25, 41],
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],
-    shadowUrl: '/icons/marker-shadow.png',
+    shadowUrl: '/images/icons/markers/marker-shadow.png',
     shadowSize: [41, 41]
   });
 }
@@ -130,7 +130,7 @@ async function loadGeoJson(floor: number) {
 
   try {
     // 使用fetch API加载GeoJSON数据
-    const response = await fetch(`/assets/mapdata/floor${floor}.geojson`);
+    const response = await fetch(`/data/mapdata/floor${floor}.geojson`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -348,12 +348,12 @@ defineExpose({
 
 为了使GeoJSON文件可以通过fetch访问，需要确保它们被正确放置在public目录下：
 
-1. 创建目录：`public/assets/mapdata/`
+1. 创建目录：`public/data/mapdata/`
 2. 将GeoJSON文件复制到这个目录：
-   - `public/assets/mapdata/floor1.geojson`
-   - `public/assets/mapdata/floor2.geojson`
+   - `public/data/mapdata/floor1.geojson`
+   - `public/data/mapdata/floor2.geojson`
 
-这样它们就可以通过`/assets/mapdata/floor1.geojson`这样的URL访问。
+这样它们就可以通过`/data/mapdata/floor1.geojson`这样的URL访问。
 
 ## nuxt.config.ts 配置
 
@@ -386,7 +386,7 @@ export default defineNuxtConfig({
 
 ## 图标文件
 
-确保以下图标文件存在于`public/icons/`目录下：
+确保以下图标文件存在于`public/images/icons/markers/`目录下：
 - marker-icon-blue.png
 - marker-icon-blue-2x.png
 - marker-icon-red.png
