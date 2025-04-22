@@ -3,23 +3,24 @@ import tailwindcss from '@tailwindcss/vite'
 import { defineNuxtConfig } from 'nuxt/config'
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
-  ssr: false,
   runtimeConfig: {
     // 服务器端可用的私有键
     postgresUrl: process.env.POSTGRES_URL,
     // 可以暴露给客户端的公共键
     public: {
-      // 如果你想在客户端也访问这个URL，取消下面这行的注释
       // postgresUrl: process.env.POSTGRES_URL
     }
   },
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   css: ['~/assets/css/tailwind.css'],
 
   vite: {
     plugins: [
       tailwindcss(),
     ],
+    server: {
+      allowedHosts: true
+    }
   },
 
   nitro: {
@@ -46,15 +47,15 @@ export default defineNuxtConfig({
     }
   },
   googleFonts: {
-    display: "swap",
-    download: true,
-    preload: true,
-    useStylesheet: true,
     families: {
       Inter: [400, 700],
       "Crimson Text": [400, 600, 700],
       "Noto Sans SC": [400, 600],
     },
+    subsets: ['latin'],
+    download: true,
+    preload: true,
+    useStylesheet: true
   },
   app: {
     head: {
@@ -85,7 +86,7 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
-      name: 'Hugo',
+      name: 'Hugo Tour Guide',
       short_name: 'Hugo',
       description: 'Hugo Tour Guide App',
       theme_color: '#ffffff',
@@ -93,7 +94,7 @@ export default defineNuxtConfig({
       display: 'standalone',
       orientation: 'portrait',
       lang: 'zh',
-      start_url: '/',
+      start_url: '/?source=pwa',
       icons: [
         {
           src: '/android-chrome-192x192.png',

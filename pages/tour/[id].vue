@@ -7,6 +7,18 @@
       <MapSection v-model:currentFloor="currentFloor" ref="mapSectionRef" @exhibit-selected="onExhibitSelected" />
     </div>
 
+    <!-- 博物馆名称和信息 -->
+    <div v-if="currentMuseum" class="mb-4">
+      <div class="flex justify-between items-center mb-2">
+        <h1 class="text-2xl font-bold text-gray-900">{{ currentMuseum.name }}</h1>
+        <button class="text-blue-500" @click="goBack">
+          <span class="material-icons">arrow_back</span>
+        </button>
+      </div>
+      <p class="text-gray-600">{{ currentMuseum.description }}</p>
+      <p class="text-sm text-gray-500">{{ currentMuseum.location }}</p>
+    </div>
+
     <!-- 推荐路线区域 -->
     <div class="mb-8">
       <div class="flex justify-between items-center mb-4">
@@ -78,7 +90,6 @@
     <div class="mb-20">
       <div class="flex justify-between items-center mb-5">
         <h2 class="text-xl font-semibold text-gray-900">Featured Exhibits</h2>
-
       </div>
 
       <!-- 展品滚动区域 -->
@@ -99,7 +110,6 @@
     </div>
     <GuideToolbar @open-guide-dialog="openGuideDialog" />
 
-
   </div>
 </template>
 
@@ -112,35 +122,40 @@ import MapSection from '~/components/tour/MapSection.vue'
 import ExhibitCard from '~/components/tour/ExhibitCard.vue'
 import GuideToolbar from '~/components/tour/GuideToolbar.vue'
 
-// 设置页面标题和元数据
-useHead({
-  title: 'Metropolitan Museum Tour Guide',
-  meta: [
-    { name: 'description', content: 'Interactive voice-guided tour of the Metropolitan Museum' }
-  ]
-})
-
-// 路由
+// 获取路由参数
+const route = useRoute()
 const router = useRouter()
-
-// 定义接口类型
-interface FeaturedExhibit {
-  id: number;
-  name: string;
-  description: string;
-  floor: number;
-}
-
-interface MapSectionComponent {
-  highlightExhibit: (id: number) => void;
-  zoomIn: () => void;
-  zoomOut: () => void;
-}
+const museumId = computed(() => route.params.id as string)
 
 // 使用store
 const chatStore = useChatStore()
 const tourStore = useTourStore()
-const { routeItems, featuredExhibits } = storeToRefs(tourStore)
+const { routeItems, featuredExhibits, currentMuseum } = storeToRefs(tourStore)
+
+// 设置当前博物馆
+onMounted(() => {
+  // 尝试设置当前博物馆
+  const success = tourStore.setCurrentMuseum(museumId.value)
+  
+  // 如果失败（博物馆ID不存在），重定向到默认博物馆
+  if (!success) {
+    console.warn(`Museum with ID ${museumId.value} not found, redirecting to default`)
+    router.replace('/tour/metropolitan')
+  }
+})
+
+// 动态设置页面标题和元数据
+useHead(() => ({
+  title: currentMuseum.value ? `${currentMuseum.value.name} - Tour Guide` : 'Museum Tour Guide',
+  meta: [
+    { 
+      name: 'description', 
+      content: currentMuseum.value 
+        ? `Interactive voice-guided tour of the ${currentMuseum.value.name}` 
+        : 'Interactive voice-guided museum tour'
+    }
+  ]
+}))
 
 // 使用语音导航composable
 const { playWelcomeIntroduction, speak, explainExhibit } = useVoiceNavigation()
@@ -161,6 +176,20 @@ const showMapDiagnostics = ref(false)
 const currentExhibitPage = ref(0)
 const exhibitsContainer = ref<HTMLElement | null>(null)
 
+// 定义接口类型
+interface FeaturedExhibit {
+  id: number;
+  name: string;
+  description: string;
+  floor: number;
+}
+
+interface MapSectionComponent {
+  highlightExhibit: (id: number) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+}
+
 // 计算属性：根据当前楼层过滤推荐路线
 const filteredRouteItems = computed(() => {
   return routeItems.value.filter(item => item.floor === currentFloor.value)
@@ -176,7 +205,11 @@ onMounted(() => {
 
   // 添加延迟，让页面先渲染完成
   setTimeout(() => {
-    playWelcomeIntroduction()
+    if (currentMuseum.value) {
+      speak(`Welcome to ${currentMuseum.value.name}. I'll be your guide today.`)
+    } else {
+      playWelcomeIntroduction()
+    }
   }, 1000)
 
   // 监听展品滚动
@@ -217,21 +250,24 @@ function goBack() {
 // 开始导览
 function startGuidedTour() {
   // 重置可能的高亮状态
-  tourStore.routeItems.forEach(item => item.highlight = false)
+  routeItems.value.forEach(item => item.highlight = false)
 
   // 高亮第一个项目
   if (filteredRouteItems.value.length > 0) {
     highlightExhibit(filteredRouteItems.value[0])
 
     // 播放介绍
-    speak('Let\'s start our tour of the Metropolitan Museum. I\'ll guide you through the highlights of the collection.')
+    if (currentMuseum.value) {
+      speak(`Let's start our tour of the ${currentMuseum.value.name}. I'll guide you through the highlights of the collection.`)
+    } else {
+      speak('Let\'s start our tour. I\'ll guide you through the highlights of the collection.')
+    }
   }
 }
 
 // 切换地图诊断显示
 function toggleMapDiagnostics() {
   showMapDiagnostics.value = !showMapDiagnostics.value
-  // 实际项目中需要实现地图诊断功能
   console.log('Toggle map diagnostics:', showMapDiagnostics.value)
 }
 
@@ -331,7 +367,7 @@ function addExhibitToRoute(exhibit: FeaturedExhibit) {
 <style scoped>
 /* 避免底部工具栏遮挡内容 */
 .pb-20 {
-  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0));
+  padding-bottom: 5rem;
 }
 
 /* 隐藏滚动条 */
@@ -347,12 +383,5 @@ function addExhibitToRoute(exhibit: FeaturedExhibit) {
 /* 滚动指示器动画 */
 .rounded-full {
   transition: all 0.3s ease;
-}
-
-/* 安全区域适配 */
-@supports (padding: max(0px)) {
-  .pb-20 {
-    padding-bottom: max(5rem, env(safe-area-inset-bottom, 0));
-  }
 }
 </style>

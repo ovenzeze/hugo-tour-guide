@@ -10,10 +10,18 @@
       </div>
     </main>
     
-    <!-- 移动端底部导航 -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50 h-16">
-      <ul class="flex justify-around h-full items-center">
-        <li v-for="link in bottomNavLinks" :key="link.path" class="flex-1 h-full">
+    <!-- 移动端底部导航 - 添加安全区域支持 -->
+    <nav
+      class="fixed bottom-0 left-0 right-0 border-t shadow-lg z-50 bg-background border-t-border"
+      :style="{
+        // height: '5rem',
+        paddingTop: '0.5rem',
+        paddingBottom: `calc(0.5rem + env(safe-area-inset-bottom) * 0.5)`,
+      }"
+      :class="{ 'pwa-mode': isPwa }"
+    >
+      <ul class="flex justify-around h-full items-center ">
+        <li v-for="link in bottomNavLinks" :key="link.path" class="flex-1 h-full ">
           <NuxtLink 
             :to="link.path" 
             class="flex flex-col items-center justify-center h-full px-2 py-1 text-xs"
@@ -29,8 +37,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import DynamicHeader from '~/components/layout/DynamicHeader.vue'
+// Nuxt 3 会自动导入组件和 composables
+const { isPwa } = usePwa()
 
 const navLinks = [
   { path: '/', label: 'Home', icon: 'ph:house' },
