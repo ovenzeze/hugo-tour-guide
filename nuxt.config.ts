@@ -11,6 +11,22 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   css: ['~/assets/css/tailwind.css'],
 
+  // Vue配置，禁用实验性功能警告
+  vue: {
+    compilerOptions: {
+      isCustomElement: (tag) => tag === 'Suspense'
+    },
+    config: {
+      warnHandler: function(msg: string, vm: any, trace: any) {
+        // 忽略Suspense相关警告
+        if (msg.includes('Suspense is an experimental feature')) {
+          return
+        }
+        console.warn(msg, trace)
+      }
+    }
+  },
+
   // 添加组件自动导入配置
   components: {
     dirs: [

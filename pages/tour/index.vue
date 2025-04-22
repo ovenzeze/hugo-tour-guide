@@ -1,104 +1,152 @@
 <template>
-  <div class="h-full w-full max-h-full relative" v-motion :initial="{ opacity: 0 }"
+  <!-- Main container: Relative, full height/width -->
+  <div class="relative h-full w-full" v-motion :initial="{ opacity: 0 }"
     :enter="{ opacity: 1, transition: { duration: 0.5 } }">
 
-    <!-- 地图组件 -->
-    <div class="overflow-hidden">
-      <MapSection v-model:currentFloor="currentFloor" ref="mapSectionRef" @exhibit-selected="onExhibitSelected" />
+    <!-- Welcome interaction dialog - Keep as is, highest z-index -->
+    <div v-if="!userHasInteracted" 
+         class="fixed inset-0 z-50 h-full w-full bg-black/10 backdrop-blur-sm flex items-center justify-center"
+         style=" position: fixed; top: 0; left: 0;"
+         v-motion
+         :initial="{ opacity: 0 }"
+         :enter="{ opacity: 1, transition: { duration: 0.3 } }">
+        <div 
+          class="max-w-md w-full mx-4"
+          v-motion
+          :initial="{ scale: 0.9, y: 20, opacity: 0 }"
+          :enter="{ scale: 1, y: 0, opacity: 1, transition: { type: 'spring', stiffness: 300, damping: 20, delay: 0.1 } }">
+          <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <!-- Top image area with museum icon -->
+            <div class="h-36 bg-blue-500 flex items-center justify-center relative overflow-hidden">
+              <div class="absolute inset-0 opacity-20" 
+                   style="background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px); background-size: 20px 20px;"></div>
+              <div 
+                class="w-20 h-20 rounded-full bg-white/95 flex items-center justify-center z-10 shadow-md"
+                v-motion
+                :initial="{ scale: 0.8, opacity: 0 }"
+                :enter="{ scale: 1, opacity: 1, transition: { delay: 0.3, duration: 0.4 } }">
+                <span class="material-icons text-blue-500 text-4xl">home</span>
+              </div>
+            </div>
+            
+            <!-- Content area -->
+            <div class="p-6">
+              <h1 
+                class="text-2xl font-bold text-center mb-3 text-gray-900"
+                v-motion
+                :initial="{ opacity: 0, y: 10 }"
+                :enter="{ opacity: 1, y: 0, transition: { delay: 0.4, duration: 0.3 } }">
+                Welcome to Museum Voice Tour
+              </h1>
+              <p 
+                class="text-gray-600 text-center mb-6 text-sm"
+                v-motion
+                :initial="{ opacity: 0 }"
+                :enter="{ opacity: 1, transition: { delay: 0.5, duration: 0.3 } }">
+                Click the button below to start exploring the Metropolitan Museum's magnificent art treasures with your virtual guide
+              </p>
+              
+              <!-- Button styled more like screenshot -->
+              <button 
+                @click="startWithUserInteraction"
+                class="w-full py-3 rounded-lg font-medium flex items-center justify-center transition-all bg-blue-500 hover:bg-blue-600 text-white"
+                v-motion
+                :initial="{ opacity: 0, y: 10 }"
+                :enter="{ opacity: 1, y: 0, transition: { delay: 0.6, duration: 0.3 } }"
+                v-motion:hover="{ scale: 1.02 }"
+                v-motion:tap="{ scale: 0.98 }">
+                <span class="material-icons mr-2">play_arrow</span>
+                <span>Start Voice Tour</span>
+              </button>
+            </div>
+          </div>
+        </div>
     </div>
 
-    <!-- 推荐路线区域 -->
-    <div class="mb-8">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold text-gray-900">Recommended Route</h2>
-        <button class="flex items-center gap-2 text-blue-500 font-medium" @click="startGuidedTour">
-          <span>Start Tour</span>
-          <span class="material-icons">play_arrow</span>
+    <!-- Map Container: Absolutely positioned to fill parent, background layer -->
+    <div class="absolute inset-0 z-0">
+      <MapSection 
+        v-model:currentFloor="currentFloor" 
+        ref="mapSectionRef" 
+        @exhibit-selected="onExhibitSelected"
+        :intrinsic-width="currentMapDimensions.width"  
+        :intrinsic-height="currentMapDimensions.height" 
+        :pixels-per-meter="currentMapScale" 
+      />
+    </div>
+
+    <!-- Top Center Museum Name Overlay -->
+    <div class="absolute top-4 left-1/2 -translate-x-1/2 z-10 px-4 py-1.5 bg-black/60 backdrop-blur-md text-white text-sm font-medium rounded-full shadow-lg">
+      The Metropolitan Museum of Art
+    </div>
+
+    <!-- Buttons/Icons positioned over the map -->
+    <!-- 'Find Companions' button removed -->
+    
+    <!-- GPS Icon -->
+    <div class="absolute bottom-28 right-4 z-10 w-12 h-12 bg-green-500/80 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+      <span class="material-icons text-white text-2xl">gps_fixed</span>
+    </div>
+    
+    <!-- Dynamic Bottom Information Card Area -->
+    <div class="absolute bottom-20 left-4 right-4 z-10 bg-black/60 backdrop-blur-md p-3 rounded-lg shadow-lg flex gap-3 items-start text-white/90">
+      
+      <!-- == Step Card State == -->
+      <div v-if="currentCardState.type === 'step'" class="flex gap-3 items-start w-full">
+        <!-- TODO: Make image source dynamic based on current step/context -->
+        <img :src="currentCardState.data.image || 'https://via.placeholder.com/80x60'" alt="Step Context" class="w-20 h-[60px] object-cover rounded flex-shrink-0">
+        <div class="flex-grow text-sm">
+          <p class="font-semibold mb-1">Step {{ currentCardState.data.stepNumber }}:</p>
+          <p class="text-white/80 leading-snug">{{ currentCardState.data.description }}</p>
+        </div>
+        <!-- Placeholder for expand/collapse -->
+        <button class="text-white/70 hover:text-white flex-shrink-0 pt-1">
+          <span class="material-icons text-lg">unfold_less</span> <!-- Or unfold_more -->
         </button>
       </div>
 
-      <!-- 路线信息 -->
-      <div class="bg-blue-50 p-4 rounded-t-lg border border-blue-100">
-        <div class="flex justify-between items-center flex-wrap gap-y-2">
-          <div class="flex items-center">
-            <span class="material-icons text-blue-600 mr-2">schedule</span>
-            <div>
-              <span class="text-sm text-gray-700">Estimated Time:</span>
-              <span class="font-medium ml-1">1 hour 15 minutes</span>
-            </div>
-          </div>
-          <div class="flex items-center">
-            <span class="material-icons text-blue-600 mr-2">straighten</span>
-            <div>
-              <span class="text-sm text-gray-700">Distance:</span>
-              <span class="font-medium ml-1">0.8 km</span>
-            </div>
-          </div>
+      <!-- == Welcome Card State (Placeholder) == -->
+      <div v-else-if="currentCardState.type === 'welcome'" class="flex gap-3 items-start w-full">
+        <img :src="currentCardState.data.image || 'https://via.placeholder.com/80x60'" alt="Museum Image" class="w-20 h-[60px] object-cover rounded flex-shrink-0">
+        <div class="flex-grow text-sm">
+          <p class="font-semibold mb-1">{{ currentCardState.data.title }}</p>
+          <p class="text-white/80 leading-snug">{{ currentCardState.data.description }}</p>
         </div>
+         <button class="text-white/70 hover:text-white flex-shrink-0 pt-1">
+          <span class="material-icons text-lg">info_outline</span> 
+        </button>
       </div>
 
-      <!-- 路线项目列表 -->
-      <div class="border border-t-0 rounded-b-lg divide-y overflow-hidden">
-        <div v-for="(item, index) in filteredRouteItems" :key="item.id"
-          class="p-4 flex bg-white hover:bg-gray-50 transition-colors cursor-pointer"
-          :class="{ 'bg-blue-50 hover:bg-blue-100': item.highlight }" @click="highlightExhibit(item)">
-          <!-- 编号圆圈 -->
-          <div class="mr-4">
-            <div
-              class="bg-blue-500 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg">
-              {{ index + 1 }}
-            </div>
-          </div>
-
-          <!-- 项目信息 -->
-          <div class="flex-1">
-            <div class="font-medium text-gray-900 mb-1">{{ item.name }}</div>
-            <div class="flex items-center text-gray-500 text-sm">
-              <span class="material-icons text-sm mr-1">place</span>
-              <span>{{ item.location }}</span>
-            </div>
-          </div>
-
-          <!-- 操作按钮 -->
-          <div class="flex items-center gap-2">
-            <button class="text-blue-500 p-2 hover:bg-blue-50 rounded-full" title="Show on map"
-              @click.stop="showExhibitOnMap(item)">
-              <span class="material-icons">map</span>
-            </button>
-            <button class="text-green-500 p-2 hover:bg-green-50 rounded-full" title="Listen to guide"
-              @click.stop="listenToGuideExplanation(item)">
-              <span class="material-icons">volume_up</span>
-            </button>
-          </div>
+      <!-- == Exhibit Card State (Placeholder Structure) == -->
+      <div v-else-if="currentCardState.type === 'exhibit'" class="flex gap-3 items-start w-full">
+        <img :src="currentCardState.data.image || 'https://via.placeholder.com/80x60'" :alt="currentCardState.data.name" class="w-20 h-[60px] object-cover rounded flex-shrink-0">
+        <div class="flex-grow text-sm">
+          <p class="font-semibold mb-1">{{ currentCardState.data.name }}</p>
+          <p class="text-white/80 leading-snug">{{ currentCardState.data.shortDescription }}</p>
         </div>
+         <button class="text-white/70 hover:text-white flex-shrink-0 pt-1">
+          <span class="material-icons text-lg">visibility</span> <!-- View Details? -->
+        </button>
       </div>
+      
+      <!-- Add v-else-if for other card types (gallery, etc.) -->
+
     </div>
 
-    <!-- 特色展品 -->
-    <div class="mb-20">
-      <div class="flex justify-between items-center mb-5">
-        <h2 class="text-xl font-semibold text-gray-900">Featured Exhibits</h2>
-
-      </div>
-
-      <!-- 展品滚动区域 -->
-      <div class="relative">
-        <div ref="exhibitsContainer" class="flex gap-4 snap-x snap-mandatory overflow-x-auto hide-scrollbar pb-4">
-          <ExhibitCard v-for="(exhibit, index) in featuredExhibits" :key="exhibit.id" :exhibit="exhibit"
-            :delay="0.7 + index * 0.1" class="snap-start min-w-[280px] flex-shrink-0" @view-details="viewExhibitDetails"
-            @add-to-route="addExhibitToRoute" />
-        </div>
-
-        <!-- 滚动指示器 -->
-        <div class="flex justify-center space-x-1 mt-3">
-          <button v-for="(_, index) in Math.min(3, featuredExhibits.length)" :key="index"
-            class="w-2 h-2 rounded-full bg-gray-300"
-            :class="{ 'w-6 bg-blue-500': currentExhibitPage === index }"></button>
-        </div>
-      </div>
+    <!-- Bottom Action Bar / Guide Toolbar: Overlay -->
+    <div class="absolute bottom-0 left-0 right-0 z-10 bg-black/80 backdrop-blur-md p-2 flex items-center justify-between shadow-lg">
+      <img src="https://via.placeholder.com/40" alt="User Avatar" class="w-10 h-10 rounded-full border-2 border-white flex-shrink-0">
+      <button class="flex-grow mx-4 bg-gray-700/80 hover:bg-gray-600/90 text-white py-2 px-4 rounded-full flex items-center justify-center gap-2">
+        <span class="material-icons">support_agent</span>
+        <span>Ask Guide</span>
+      </button>
+      <button class="bg-gray-700/80 hover:bg-gray-600/90 text-white p-2 rounded-full flex-shrink-0">
+        <span class="material-icons">photo_camera</span>
+      </button>
     </div>
-    <GuideToolbar @open-guide-dialog="openGuideDialog" />
-
+    
+    <!-- Guide Dialog - Keep for now, might be triggered by 'Ask Guide' -->
+    <!-- <GuideDialog v-model:show="showGuideDialog" :messages="chatMessages" @send-message="handleSendMessage" /> -->
 
   </div>
 </template>
@@ -106,24 +154,35 @@
 <script setup lang="ts">
 import { useChatStore } from '~/stores/chatStore'
 import { useTourStore, type ExhibitItem } from '~/stores/tourStore'
-import { storeToRefs } from 'pinia'
 import { useVoiceNavigation } from '~/composables/useVoiceNavigation'
 import MapSection from '~/components/tour/MapSection.vue'
-import ExhibitCard from '~/components/tour/ExhibitCard.vue'
-import GuideToolbar from '~/components/tour/GuideToolbar.vue'
+// ExhibitCard is removed as the section is removed
+// import ExhibitCard from '~/components/tour/ExhibitCard.vue'
+// GuideToolbar is removed and replaced by the new bottom bar
+// import GuideToolbar from '~/components/tour/GuideToolbar.vue' 
+import { storeToRefs } from 'pinia'
+
+// Tell the layout to hide the default footer for this page
+definePageMeta({
+  layout: 'fullscreen' // Use the new fullscreen layout
+})
+
 
 // 设置页面标题和元数据
 useHead({
-  title: 'Metropolitan Museum Tour Guide',
+  title: 'Metropolitan Museum Tour Guide - Navigation', // Updated title
   meta: [
-    { name: 'description', content: 'Interactive voice-guided tour of the Metropolitan Museum' }
+    { name: 'description', content: 'Interactive voice-guided tour of the Metropolitan Museum - Map Navigation' }
   ]
 })
+
+// 用户交互状态
+const userHasInteracted = ref(false)
 
 // 路由
 const router = useRouter()
 
-// 定义接口类型
+// Define Interface Types (Restored)
 interface FeaturedExhibit {
   id: number;
   name: string;
@@ -133,19 +192,40 @@ interface FeaturedExhibit {
 
 interface MapSectionComponent {
   highlightExhibit: (id: number) => void;
-  zoomIn: () => void;
-  zoomOut: () => void;
+  resetView: () => void;
+  centerView: () => void;
+  // Add other methods exposed by MapSection if needed
 }
 
-// 使用store
-const chatStore = useChatStore()
-const tourStore = useTourStore()
-const { routeItems, featuredExhibits } = storeToRefs(tourStore)
+// Placeholder map data based on floor
+// IMPORTANT: Replace width, height, and scale (pixelsPerMeter) with actual measured values!
+type FloorKey = 0 | 1 | 2;
+const mapDataByFloor: Record<FloorKey, { width: number; height: number; scale: number }> = {
+  0: { width: 1800, height: 1200, scale: 18 }, // ground floor - ESTIMATE
+  1: { width: 2000, height: 1500, scale: 20 }, // floor 1 - ESTIMATE based on visual inspection
+  2: { width: 2200, height: 1600, scale: 22 }  // floor 2-3 - ESTIMATE
+}
+
+// 地图相关状态
+const currentFloor = ref<FloorKey>(1) // Use FloorKey type
+
+// Computed properties for current map dimensions and scale
+const currentMapDimensions = computed(() => {
+  // Use currentFloor.value directly as it's now FloorKey
+  const data = mapDataByFloor[currentFloor.value] || mapDataByFloor[1]; 
+  return { width: data.width, height: data.height };
+});
+
+const currentMapScale = computed(() => {
+  // Use currentFloor.value directly
+  const data = mapDataByFloor[currentFloor.value] || mapDataByFloor[1];
+  return data.scale;
+});
 
 // 使用语音导航composable
 const { playWelcomeIntroduction, speak, explainExhibit } = useVoiceNavigation()
 
-// 对话框状态
+// 对话框状态 - Keep for potential use with 'Ask Guide'
 const showGuideDialog = ref(false)
 const userMessage = ref('')
 const chatMessages = ref<{ role: 'user' | 'guide', content: string }[]>([
@@ -153,20 +233,64 @@ const chatMessages = ref<{ role: 'user' | 'guide', content: string }[]>([
 ])
 
 // 地图相关状态
-const currentFloor = ref(1)
 const mapSectionRef = ref<MapSectionComponent | null>(null)
-const showMapDiagnostics = ref(false)
+const showMapDiagnostics = ref(false) // Keep, might be useful
 
-// 展品相关状态
-const currentExhibitPage = ref(0)
-const exhibitsContainer = ref<HTMLElement | null>(null)
+// 展品相关状态 - Remove scroll-related refs
+// const exhibitsContainer = ref<HTMLElement | null>(null) 
+// const currentExhibitPage = ref(0)
 
-// 计算属性：根据当前楼层过滤推荐路线
+// 计算属性：根据当前楼层过滤推荐路线 - Keep, might be used for map markers
 const filteredRouteItems = computed(() => {
+  // Ensure filtering works with FloorKey type if necessary
   return routeItems.value.filter(item => item.floor === currentFloor.value)
 })
 
-// 页面加载时自动播放欢迎介绍
+// Define Card State Types
+interface StepCardData {
+  stepNumber: number;
+  description: string;
+  image?: string;
+}
+interface WelcomeCardData {
+  title: string;
+  description: string;
+  image?: string;
+}
+interface ExhibitCardData { // Placeholder structure
+  id: number;
+  name: string;
+  shortDescription: string;
+  image?: string;
+}
+
+type CardState = 
+  | { type: 'step'; data: StepCardData }
+  | { type: 'welcome'; data: WelcomeCardData }
+  | { type: 'exhibit'; data: ExhibitCardData }
+  // Add other types like | { type: 'gallery'; data: GalleryCardData }
+
+// Reactive state for the dynamic bottom card
+const currentCardState = ref<CardState>({
+  type: 'step', // Default state
+  data: { 
+    stepNumber: 1, 
+    description: "From the ticket gate, go straight to the top floor (2nd floor), enter the main corridor, turn left, enter the first gallery on the left, arrive at room 600 (Map marker 1), and enjoy Giotto's 'Madonna Enthroned'.",
+    // image: 'path/to/step1/image.jpg' // Optional image URL
+  }
+});
+
+// 用户交互后开始导览
+function startWithUserInteraction() {
+  userHasInteracted.value = true
+  // TODO: Potentially set currentCardState to a 'welcome' or initial state
+  // currentCardState.value = { type: 'welcome', data: { title: 'Welcome!', ... } };
+  setTimeout(() => {
+    playWelcomeIntroduction()
+  }, 100)
+}
+
+// 页面加载时设置字体但不自动播放欢迎介绍
 onMounted(() => {
   // 加载Material Icons字体
   const link = document.createElement('link')
@@ -174,15 +298,10 @@ onMounted(() => {
   link.rel = 'stylesheet'
   document.head.appendChild(link)
 
-  // 添加延迟，让页面先渲染完成
-  setTimeout(() => {
-    playWelcomeIntroduction()
-  }, 1000)
-
-  // 监听展品滚动
-  if (exhibitsContainer.value) {
-    exhibitsContainer.value.addEventListener('scroll', handleExhibitScroll)
-  }
+  // Remove exhibit scroll listener
+  // if (exhibitsContainer.value) {
+  //   exhibitsContainer.value.addEventListener('scroll', handleExhibitScroll)
+  // }
 })
 
 // 确保在组件销毁时清理资源
@@ -192,167 +311,202 @@ onBeforeUnmount(() => {
     window.speechSynthesis.cancel()
   }
 
-  // 移除滚动监听
-  if (exhibitsContainer.value) {
-    exhibitsContainer.value.removeEventListener('scroll', handleExhibitScroll)
-  }
+  // Remove scroll listener cleanup
+  // if (exhibitsContainer.value) {
+  //   exhibitsContainer.value.removeEventListener('scroll', handleExhibitScroll)
+  // }
 })
 
-// 监听展品滚动
-function handleExhibitScroll() {
-  if (!exhibitsContainer.value) return
+// Remove handleExhibitScroll function
+// function handleExhibitScroll() { ... }
 
-  const containerWidth = exhibitsContainer.value.offsetWidth
-  const scrollPosition = exhibitsContainer.value.scrollLeft
-  const pageIndex = Math.round(scrollPosition / containerWidth)
-
-  currentExhibitPage.value = Math.min(pageIndex, 2) // 最多显示3个指示器
-}
-
-// 导航方法
+// 导航方法 - Keep
 function goBack() {
   router.back()
 }
 
-// 开始导览
+// 开始导览 - Keep, might be triggered differently now
 function startGuidedTour() {
-  // 重置可能的高亮状态
+  // Reset highlighting
   tourStore.routeItems.forEach(item => item.highlight = false)
 
-  // 高亮第一个项目
   if (filteredRouteItems.value.length > 0) {
-    highlightExhibit(filteredRouteItems.value[0])
+    const firstItem = filteredRouteItems.value[0]
+    highlightExhibit(firstItem) // Still useful to highlight on map
 
-    // 播放介绍
-    speak('Let\'s start our tour of the Metropolitan Museum. I\'ll guide you through the highlights of the collection.')
+    // TODO: Update MapSection to show route markers (1, 2, 3...)
+    // if (mapSectionRef.value) {
+    //   mapSectionRef.value.displayRouteMarkers(filteredRouteItems.value); 
+    // }
+    
+    // Update intro speech if needed
+    speak('Starting the guided tour. Follow the map directions.') 
   }
+
+  // TODO: Set currentCardState to the first step
+  // currentCardState.value = { type: 'step', data: { stepNumber: 1, ... } };
 }
 
-// 切换地图诊断显示
+// 切换地图诊断显示 - Keep
 function toggleMapDiagnostics() {
   showMapDiagnostics.value = !showMapDiagnostics.value
-  // 实际项目中需要实现地图诊断功能
   console.log('Toggle map diagnostics:', showMapDiagnostics.value)
 }
 
-// 收听导游解释
+// 收听导游解释 - Keep, can be triggered from map marker or elsewhere
 function listenToGuideExplanation(item: ExhibitItem) {
-  highlightExhibit(item)
-
-  // 使用语音导航解释展品
-  explainExhibit(item)
+  highlightExhibit(item) // Highlight on map
+  explainExhibit(item) // Use voice navigation
 }
 
-// 处理Guide对话框交互
+// 处理Guide对话框交互 - Keep for 'Ask Guide' button
 function openGuideDialog() {
   showGuideDialog.value = true
 }
 
 function handleSendMessage() {
   if (!userMessage.value.trim()) return
-
-  // 添加用户消息
-  chatMessages.value.push({
-    role: 'user',
-    content: userMessage.value
-  })
-
-  // 处理响应
-  // 实际项目中，这里会调用API获取响应
+  chatMessages.value.push({ role: 'user', content: userMessage.value })
+  // Mock response
   setTimeout(() => {
-    const response = `Thank you for your question "${userMessage.value}". I can provide exhibit information, explain historical context, or recommend tour routes.`
-    chatMessages.value.push({
-      role: 'guide',
-      content: response
-    })
-
-    // 使用语音朗读响应
+    const response = `Looking into "${userMessage.value}"...`
+    chatMessages.value.push({ role: 'guide', content: response })
     speak(response)
   }, 800)
-
-  // 清空输入
   userMessage.value = ''
 }
 
-// 高亮展品
+// 高亮展品 - Keep, mainly interacts with MapSection now
 function highlightExhibit(item: ExhibitItem) {
-  // 使用store中的高亮方法
-  tourStore.highlightExhibit(item)
-
-  // 切换到展品所在的楼层
-  currentFloor.value = item.floor
-
-  // 调用地图组件的方法来高亮显示展品位置
+  tourStore.highlightExhibit(item) // Update store state (might visually affect map marker)
+  
+  // Safely assign floor number to currentFloor if it's a valid FloorKey
+  if (item.floor === 0 || item.floor === 1 || item.floor === 2) {
+      currentFloor.value = item.floor // Assign only if valid
+  } else {
+      console.warn(`Invalid floor number (${item.floor}) received for exhibit ${item.id}. Defaulting to floor 1.`);
+      currentFloor.value = 1; // Default to a safe value if invalid
+  }
+  
   if (mapSectionRef.value) {
-    mapSectionRef.value.highlightExhibit(item.id)
+    mapSectionRef.value.highlightExhibit(item.id) // Tell map to highlight/center
   }
 }
 
-// 在地图上显示展品
+// 在地图上显示展品 - Keep, essentially same as highlightExhibit now
 function showExhibitOnMap(item: ExhibitItem) {
-  // 切换到展品所在的楼层
-  currentFloor.value = item.floor
-
-  // 调用地图组件的方法来高亮显示展品位置
-  if (mapSectionRef.value) {
-    mapSectionRef.value.highlightExhibit(item.id)
-  }
+  highlightExhibit(item)
 }
 
-// 处理地图选择展品事件
-function onExhibitSelected(exhibit: { id: number }) {
-  // 找到对应的路线项目
+// 处理地图选择展品事件 - Keep, core interaction
+function onExhibitSelected(exhibit: { id: number, name?: string }) {
   const routeItem = routeItems.value.find(item => item.id === exhibit.id)
   if (routeItem) {
-    // 高亮显示路线项目
-    highlightExhibit(routeItem)
+    highlightExhibit(routeItem) // Highlight the selected item
+    // TODO: Set card state to show exhibit info
+    // currentCardState.value = { 
+    //   type: 'exhibit', 
+    //   data: { 
+    //     id: routeItem.id, 
+    //     name: routeItem.name, 
+    //     shortDescription: routeItem.description || 'Exhibit details unavailable.',
+    //     // image: routeItem.imageUrl // If available
+    //   }
+    // };
+  } else {
+     // Optional: Handle click on map that isn't a known exhibit
+     // currentCardState.value = { type: 'map_info', data: { coordinates: ... } };
   }
 }
 
-// 查看展品详情
-function viewExhibitDetails(exhibit: FeaturedExhibit) {
-  console.log('View details for:', exhibit.name)
-  showGuideDialog.value = true
-
-  // 自动填充问题
-  userMessage.value = `Please tell me about "${exhibit.name}" exhibit`
+// 查看展品详情 - Modify to potentially trigger 'Ask Guide' or update card state
+function viewExhibitDetails(exhibit: ExhibitCardData) {
+  console.log('View details for:', exhibit.name);
+  // Option 1: Update card state to show more details (if card handles it)
+  // currentCardState.value = { type: 'exhibit_detail', data: exhibit }; 
+  
+  // Option 2: Open Guide Dialog with prefilled query
+  userMessage.value = `Tell me more about "${exhibit.name}".`;
+  openGuideDialog(); 
 }
 
-// 添加展品到路线
+// 添加展品到路线 - Keep logic, trigger source might change
 function addExhibitToRoute(exhibit: FeaturedExhibit) {
   console.log('Add to route:', exhibit.name)
-  // 实现添加到路线逻辑
-
-  // 显示成功提示
+  // TODO: Implement actual logic in tourStore
   speak(`Added ${exhibit.name} to your tour route.`)
 }
+
+// 使用store
+const chatStore = useChatStore()
+const tourStore = useTourStore()
+// Keep routeItems and featuredExhibits as they might be used for map markers or 'Ask Guide'
+const { routeItems, featuredExhibits } = storeToRefs(tourStore)
 </script>
 
 <style scoped>
-/* 避免底部工具栏遮挡内容 */
-.pb-20 {
-  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0));
+/* Remove styles related to flex-grow/shrink if they were specific */
+/* .flex-grow { ... } */
+/* .flex-shrink-0 { ... } */
+
+/* Ensure map takes up available space */
+.relative {
+  position: relative;
+}
+.absolute {
+  position: absolute;
+}
+.inset-0 {
+  top: 0; right: 0; bottom: 0; left: 0;
+}
+.z-0 { z-index: 0; }
+.z-10 { z-index: 10; }
+.z-50 { z-index: 50; }
+
+/* Basic styling for elements */
+.border-t {
+  border-top-width: 1px;
+}
+.gap-4 {
+  gap: 1rem;
+}
+.items-center {
+  align-items: center;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.shadow-lg {
+   box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06); /* Adjusted shadow for bottom elements */
 }
 
-/* 隐藏滚动条 */
+/* Positioning */
+.top-4 { top: 1rem; }
+.right-4 { right: 1rem; }
+.bottom-0 { bottom: 0; }
+.bottom-16 { bottom: 4rem; } /* Adjust if action bar height differs */
+.bottom-20 { bottom: 5rem; } /* Instruction card position */
+.bottom-28 { bottom: 7rem; } /* GPS icon position */
+.left-0 { left: 0; }
+.right-0 { right: 0; }
+.right-36 { right: 9rem; }
+
+/* Add flex-shrink-0 utility if not globally available */
+.flex-shrink-0 { flex-shrink: 0; }
+
+/* Hide scrollbar (if needed for any internal scroll) */
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
-/* 滚动指示器动画 */
-.rounded-full {
-  transition: all 0.3s ease;
+/* Add backdrop blur utility if not globally available */
+.backdrop-blur-md {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
-/* 安全区域适配 */
-@supports (padding: max(0px)) {
-  .pb-20 {
-    padding-bottom: max(5rem, env(safe-area-inset-bottom, 0));
-  }
-}
 </style>

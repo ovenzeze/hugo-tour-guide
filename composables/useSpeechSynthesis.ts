@@ -106,18 +106,27 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
       }
       
       utterance.onerror = (event) => {
-        console.error('Speech synthesis error:', event.error)
-        isSpeaking.value = false
-        isPaused.value = false
-        reject(new Error(`Speech synthesis error: ${event.error}`)) // Provide more specific error
+        // Special handling for speech playback permission error
+        if (event.error === 'not-allowed') {
+          console.info('Speech synthesis requires user interaction permission, content added to pending queue')
+          isSpeaking.value = false
+          isPaused.value = false
+          pendingSpeech.push(text)
+          resolve() // Resolve without error, add to pending queue and end normally
+        } else {
+          console.error('Speech synthesis error:', event.error)
+          isSpeaking.value = false
+          isPaused.value = false
+          reject(new Error(`Speech synthesis error: ${event.error}`)) 
+        }
       }
       
       // Cancel any ongoing speech before speaking
       window.speechSynthesis.cancel()
       
-      // 语音合成必须在用户交互后才能自动播放声音
+      // Speech synthesis requires user interaction before auto-playing sound
       try {
-        // 尝试使用语音合成
+        // Attempt to use speech synthesis
         window.speechSynthesis.speak(utterance)
       } catch (error) {
         reject(error)
@@ -125,37 +134,37 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
     })
   }
   
-  // 安全的语音合成，只在确保用户交互后才尝试播放
+  // Safe speech synthesis, only attempts playback after ensuring user interaction
   let hasUserInteracted = false
   let pendingSpeech: string[] = []
   
-  // 监听用户交互事件，用于跟踪用户是否与页面交互过
+  // Listen for user interaction events to track if user has interacted with the page
   if (typeof window !== 'undefined') {
     const userInteractionEvents = ['click', 'touchstart', 'keydown']
     
     const markUserInteracted = () => {
       hasUserInteracted = true
       
-      // 尝试播放之前等待的语音
+      // Try to play pending speech
       if (pendingSpeech.length > 0) {
         const textToSpeak = pendingSpeech.shift()
         if (textToSpeak) speak(textToSpeak)
       }
       
-      // 清理事件监听器（用户只需要交互一次）
+      // Clean up event listeners (user only needs to interact once)
       userInteractionEvents.forEach(event => {
         window.removeEventListener(event, markUserInteracted)
       })
     }
     
-    // 添加事件监听器
+    // Add event listeners
     onMounted(() => {
       userInteractionEvents.forEach(event => {
         window.addEventListener(event, markUserInteracted)
       })
     })
     
-    // 清除事件监听器
+    // Remove event listeners
     onBeforeUnmount(() => {
       userInteractionEvents.forEach(event => {
         window.removeEventListener(event, markUserInteracted)
@@ -163,7 +172,7 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
     })
   }
   
-  // 安全的尝试语音合成方法，会检查用户是否已交互
+  // Safe speech synthesis method that checks for user interaction
   function trySpeak(text: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!text) {
@@ -172,13 +181,13 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
       }
       
       if (hasUserInteracted) {
-        // 如果用户已经交互过，直接使用语音合成
+        // If user has already interacted, use speech synthesis directly
         speak(text).then(resolve).catch(reject)
       } else {
-        // 如果用户尚未交互，将文本添加到待处理队列
+        // If user hasn't interacted yet, add text to pending queue
         console.info('Queuing speech until user interaction:', text)
         pendingSpeech.push(text)
-        resolve() // 我们仍然解析Promise，以避免未处理的Promise错误
+        resolve() // Still resolve Promise to avoid unhandled Promise errors
       }
     })
   }
@@ -246,7 +255,7 @@ export function useSpeechSynthesis(options: UseSpeechSynthesisOptions = {}) {
     voices: readonly(voices),
     currentVoice: readonly(currentVoice),
     speak,
-    trySpeak, // 导出安全的语音合成方法
+    trySpeak, // Export safe speech synthesis method
     pause,
     resume,
     cancel,
