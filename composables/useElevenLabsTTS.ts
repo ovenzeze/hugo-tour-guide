@@ -1,4 +1,6 @@
 import { ref, computed } from 'vue'
+import type { Voice } from '~/types/voice'
+import { getDefaultVoice, findVoiceById } from '~/config/elevenlabs'
 
 interface TTSOptions {
   voiceId?: string;
@@ -16,6 +18,36 @@ export function useElevenLabsTTS() {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const audioData = ref<Blob | null>(null) // 添加一个新的 ref 存储原始音频数据
+  const currentVoiceConfig = ref<Voice.Config | null>(null)
+
+  // 使用预设配置生成声音
+  const generateWithVoiceConfig = async (text: string, voiceConfig: Voice.Config) => {
+    currentVoiceConfig.value = voiceConfig
+    
+    return generateTTS(text, {
+      voiceId: voiceConfig.id,
+      modelId: voiceConfig.modelId,
+      voiceSettings: voiceConfig.settings
+    })
+  }
+  
+  // 使用声音ID生成，自动加载预设配置
+  const generateWithVoiceId = async (text: string, voiceId: string) => {
+    const voiceConfig = findVoiceById(voiceId)
+    
+    if (voiceConfig) {
+      return generateWithVoiceConfig(text, voiceConfig)
+    } else {
+      // 如果没找到预设配置，则使用基本的ID调用
+      return generateTTS(text, { voiceId })
+    }
+  }
+  
+  // 默认声音生成
+  const generateWithDefaultVoice = async (text: string) => {
+    const defaultVoice = getDefaultVoice()
+    return generateWithVoiceConfig(text, defaultVoice)
+  }
 
   const generateTTS = async (text: string, options: TTSOptions = {}) => {
     isLoading.value = true
@@ -104,14 +136,24 @@ export function useElevenLabsTTS() {
       audioUrl.value = null
     }
     audioData.value = null
+    currentVoiceConfig.value = null
   }
 
   return {
     audioUrl,
-    audioData, // 导出原始 blob 数据，以便高级用例
+    audioData,
     isLoading,
     error,
+    currentVoiceConfig,
+    
+    // 基本生成方法
     generateTTS,
+    
+    // 高级配置方法
+    generateWithVoiceConfig,
+    generateWithVoiceId,
+    generateWithDefaultVoice,
+    
     clearAudio
   }
 } 

@@ -80,21 +80,78 @@
             <p class="text-sm text-gray-700 mb-3">
               Test the ElevenLabs Text-to-Speech API integration.
             </p>
+            
+            <!-- 声音配置选择器 -->
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">选择声音配置:</label>
+              <select 
+                v-model="selectedVoiceConfigId" 
+                @change="handleVoiceConfigChange"
+                class="w-full p-2 border rounded text-sm"
+              >
+                <option v-for="voice in voices" :key="voice.id" :value="voice.id">
+                  {{ voice.name }} ({{ voice.language }})
+                </option>
+              </select>
+            </div>
+            
+            <!-- 选中声音的信息 -->
+            <div v-if="selectedVoiceConfig" class="mb-3 p-2 bg-white rounded border text-xs">
+              <div><span class="font-medium">ID:</span> {{ selectedVoiceConfig.id }}</div>
+              <div><span class="font-medium">模型:</span> {{ selectedVoiceConfig.modelId }}</div>
+              <div><span class="font-medium">描述:</span> {{ selectedVoiceConfig.description }}</div>
+              <div class="flex gap-1 mt-1">
+                <span 
+                  v-for="tag in selectedVoiceConfig.tags" 
+                  :key="tag" 
+                  class="px-1.5 py-0.5 bg-gray-100 rounded-full text-gray-700 text-xs"
+                >
+                  {{ tag }}
+                </span>
+              </div>
+            </div>
+            
+            <!-- 预设提示词示例 -->
+            <div v-if="selectedVoiceConfig?.promptExamples" class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">提示词示例:</label>
+              <div class="flex flex-wrap gap-1">
+                <button 
+                  v-for="(prompt, key) in selectedVoiceConfig.promptExamples" 
+                  :key="key"
+                  @click="loadPromptExample(prompt)"
+                  class="px-2 py-1 bg-teal-100 hover:bg-teal-200 rounded text-xs transition"
+                >
+                  {{ key }}
+                </button>
+              </div>
+            </div>
+            
             <textarea 
               v-model="elevenLabsInputText" 
               placeholder="输入要转换为语音的文本"
               class="w-full p-2 border rounded mb-2 text-sm"
               rows="3"
             ></textarea>
-            <button
-              @click="handleElevenLabsGenerate"
-              :disabled="elevenLabsIsLoading"
-              class="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 transition text-sm flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Icon v-if="!elevenLabsIsLoading" name="ph:play-circle" class="mr-2 w-4 h-4" />
-              <Icon v-else name="svg-spinners:180-ring-with-bg" class="mr-2 w-4 h-4" />
-              {{ elevenLabsIsLoading ? '生成中...' : '生成语音 (ElevenLabs)' }}
-            </button>
+            
+            <div class="flex gap-2">
+              <button
+                @click="handleElevenLabsGenerate"
+                :disabled="elevenLabsIsLoading"
+                class="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 transition text-sm flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Icon v-if="!elevenLabsIsLoading" name="ph:play-circle" class="mr-2 w-4 h-4" />
+                <Icon v-else name="svg-spinners:180-ring-with-bg" class="mr-2 w-4 h-4" />
+                {{ elevenLabsIsLoading ? '生成中...' : '生成语音' }}
+              </button>
+              
+              <button
+                v-if="elevenLabsInputText"
+                @click="elevenLabsInputText = ''"
+                class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition text-sm"
+              >
+                清除文本
+              </button>
+            </div>
 
             <div v-if="elevenLabsError" class="mt-3 p-2 text-sm text-red-700 bg-red-100 border border-red-300 rounded">
               错误: {{ elevenLabsError }}
@@ -186,8 +243,9 @@
 import { useTourStore } from '~/stores/tourStore'
 import { useVoiceNavigation } from '~/composables/useVoiceNavigation'
 import { usePwa } from '~/composables/usePwa'
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted, onMounted } from 'vue'
 import { useElevenLabsTTS } from '~/composables/useElevenLabsTTS'
+import elevenlabs, { findVoiceById, getDefaultVoice, getAllVoices } from '~/config/elevenlabs'
 
 // Define page meta for title
 definePageMeta({
@@ -199,6 +257,9 @@ const toggleTools = ref(true)  // Open by default
 const toggleEnv = ref(false)
 const toggleStore = ref(false)
 const toggleVoice = ref(false)
+
+// 获取所有可用的声音配置
+const voices = computed(() => getAllVoices())
 
 const runtimeConfig = useRuntimeConfig()
 const tourStore = useTourStore()
@@ -218,17 +279,55 @@ const {
   audioUrl: elevenLabsAudioUrl, 
   isLoading: elevenLabsIsLoading, 
   error: elevenLabsError, 
-  generateTTS: generateElevenLabsTTS, 
-  clearAudio: clearElevenLabsAudio 
+  generateTTS: generateElevenLabsTTS,
+  generateWithVoiceConfig,
+  generateWithVoiceId,
+  clearAudio: clearElevenLabsAudio,
+  currentVoiceConfig
 } = useElevenLabsTTS()
 
-const handleElevenLabsGenerate = () => {
-  generateElevenLabsTTS(elevenLabsInputText.value)
-  // To pass options:
-  // generateElevenLabsTTS(elevenLabsInputText.value, {
-  //   voiceId: 'some_voice_id', 
-  //   modelId: 'eleven_multilingual_v2'
-  // })
+// 声音配置选择
+const selectedVoiceConfigId = ref(getDefaultVoice().id)
+const selectedVoiceConfig = computed(() => 
+  findVoiceById(selectedVoiceConfigId.value)
+)
+
+// 初始化
+onMounted(() => {
+  // 设置默认选中的声音配置
+  selectedVoiceConfigId.value = getDefaultVoice().id
+})
+
+// 处理声音配置变更
+const handleVoiceConfigChange = () => {
+  // 可以在这里添加其他逻辑，比如根据语言自动切换示例文本等
+  console.log('选择声音配置:', selectedVoiceConfig.value?.name)
+  
+  // 如果有默认提示词，可以自动加载第一个
+  if (selectedVoiceConfig.value?.promptExamples) {
+    const firstPromptKey = Object.keys(selectedVoiceConfig.value.promptExamples)[0]
+    if (firstPromptKey) {
+      const promptText = selectedVoiceConfig.value.promptExamples[firstPromptKey]
+      // 可选：自动加载提示词
+      // elevenLabsInputText.value = promptText
+    }
+  }
+}
+
+// 加载提示词示例
+const loadPromptExample = (promptText: string) => {
+  elevenLabsInputText.value = promptText
+}
+
+// 使用声音配置生成语音
+const handleElevenLabsGenerate = async () => {
+  if (selectedVoiceConfig.value) {
+    // 使用选中的声音配置
+    await generateWithVoiceConfig(elevenLabsInputText.value, selectedVoiceConfig.value)
+  } else {
+    // 未选择配置时回退到基本方法
+    await generateElevenLabsTTS(elevenLabsInputText.value)
+  }
 }
 
 // Cleanup ElevenLabs audio on unmount
