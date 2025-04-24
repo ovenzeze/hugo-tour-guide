@@ -3,14 +3,14 @@
        :class="[expanded ? 'max-h-[60vh]' : 'max-h-[120px]']"
        :style="{ marginBottom: expanded ? '80px' : '16px' }">
     <div class="p-4">
-    <!-- 步骤卡片 -->
+    <!-- Step Card -->
     <div v-if="stepData" class="flex gap-3 items-start w-full">
       <img :src="stepData.image || 'https://via.placeholder.com/80x80'" alt="Step Context" class="w-[70px] h-[70px] object-cover rounded-lg flex-shrink-0 border border-white/10">
       <div class="flex-grow text-sm">
         <p class="font-semibold mb-1.5 flex items-center"><icon name="ph:signpost" size="16" class="mr-1.5 flex-shrink-0"/> Step {{ stepData.number }}:</p>
         <p class="text-white/90 leading-relaxed">{{ stepData.description }}</p>
         <span v-if="!expanded" class="text-xs text-white/50 mt-1 flex items-center cursor-pointer" @click="expanded = true">
-          <icon name="ph:caret-down" size="14" class="mr-1"/> 展开查看更多
+          <icon name="ph:caret-down" size="14" class="mr-1"/> Show More
         </span>
       </div>
       <div class="flex flex-col gap-1.5">
@@ -20,20 +20,20 @@
         <button class="text-white/80 hover:text-white/100 flex-shrink-0 bg-white/10 hover:bg-white/20 p-1.5 rounded-full transition-colors" 
                 @click="expanded = !expanded"
                 :aria-expanded="expanded" 
-                :aria-label="expanded ? '折叠卡片' : '展开卡片'">
+                :aria-label="expanded ? 'Collapse Card' : 'Expand Card'">
           <icon :name="expanded ? 'ph:caret-up' : 'ph:caret-down'" size="18"/>
         </button>
       </div>
     </div>
 
-    <!-- 欢迎卡片 -->
+    <!-- Welcome Card -->
     <div v-else-if="welcomeData" class="flex gap-3 items-start w-full">
       <img :src="welcomeData.image || 'https://via.placeholder.com/80x80'" alt="Museum Image" class="w-[70px] h-[70px] object-cover rounded-lg flex-shrink-0 border border-white/10">
       <div class="flex-grow text-sm">
         <p class="font-semibold mb-1.5 flex items-center"><icon name="ph:info" size="16" class="mr-1.5 flex-shrink-0"/> {{ welcomeData.title }}</p>
         <p class="text-white/90 leading-relaxed">{{ welcomeData.description }}</p>
         <span v-if="!expanded" class="text-xs text-white/50 mt-1 flex items-center cursor-pointer" @click="expanded = true">
-          <icon name="ph:caret-down" size="14" class="mr-1"/> 展开查看更多
+          <icon name="ph:caret-down" size="14" class="mr-1"/> Show More
         </span>
       </div>
       <div class="flex flex-col gap-1.5">
@@ -43,20 +43,20 @@
         <button class="text-white/80 hover:text-white/100 flex-shrink-0 bg-white/10 hover:bg-white/20 p-1.5 rounded-full transition-colors" 
                 @click="expanded = !expanded"
                 :aria-expanded="expanded" 
-                :aria-label="expanded ? '折叠卡片' : '展开卡片'">
+                :aria-label="expanded ? 'Collapse Card' : 'Expand Card'">
           <icon :name="expanded ? 'ph:caret-up' : 'ph:caret-down'" size="18"/>
         </button>
       </div>
     </div>
 
-    <!-- 展品卡片 -->
+    <!-- Exhibit Card -->
     <div v-else-if="exhibitData" class="flex gap-3 items-start w-full">
       <img :src="exhibitData.image || 'https://via.placeholder.com/80x80'" :alt="exhibitData.name" class="w-[70px] h-[70px] object-cover rounded-lg flex-shrink-0 border border-white/10">
       <div class="flex-grow text-sm">
         <p class="font-semibold mb-1.5 flex items-center"><icon name="ph:bank" size="16" class="mr-1.5 flex-shrink-0"/> {{ exhibitData.name }}</p>
         <p class="text-white/90 leading-relaxed">{{ exhibitData.description }}</p>
         <span v-if="!expanded" class="text-xs text-white/50 mt-1 flex items-center cursor-pointer" @click="expanded = true">
-          <icon name="ph:caret-down" size="14" class="mr-1"/> 展开查看更多
+          <icon name="ph:caret-down" size="14" class="mr-1"/> Show More
         </span>
       </div>
       <div class="flex flex-col gap-1.5">
@@ -66,16 +66,16 @@
         <button class="text-white/80 hover:text-white/100 flex-shrink-0 bg-white/10 hover:bg-white/20 p-1.5 rounded-full transition-colors" 
                 @click="expanded = !expanded"
                 :aria-expanded="expanded" 
-                :aria-label="expanded ? '折叠卡片' : '展开卡片'">
+                :aria-label="expanded ? 'Collapse Card' : 'Expand Card'">
           <icon :name="expanded ? 'ph:caret-up' : 'ph:caret-down'" size="18"/>
         </button>
       </div>
     </div>
     </div>
 
-    <!-- 展开内容区域 -->
+    <!-- Expanded Content Area -->
     <div v-show="expanded" class="px-4 pb-4 pt-2 border-t border-white/10 mt-0 text-white expanded-content overflow-y-auto">
-      <!-- 展品详情扩展内容 -->
+      <!-- Exhibit Details Expanded Content -->
       <div v-if="exhibitData" class="text-sm">
         <h3 class="font-medium mb-2 flex items-center" v-if="exhibitData.additionalInfo">
           <icon name="ph:info" size="16" class="mr-1.5 flex-shrink-0"/> Additional Information
@@ -95,7 +95,7 @@
         </div>
       </div>
       
-      <!-- 步骤详情扩展内容 -->
+      <!-- Step Details Expanded Content -->
       <div v-if="stepData" class="text-sm">
         <h3 class="font-medium mb-2 flex items-center" v-if="stepData.directions && stepData.directions.length > 0">
           <icon name="ph:signpost" size="16" class="mr-1.5 flex-shrink-0"/> Directions
@@ -114,7 +114,7 @@
         </button>
       </div>
       
-      <!-- 欢迎卡片扩展内容 -->
+      <!-- Welcome Card Expanded Content -->
       <div v-if="welcomeData" class="text-sm">
         <h3 class="font-medium mb-2 flex items-center" v-if="welcomeData.tourOptions && welcomeData.tourOptions.length > 0">
           <icon name="ph:compass-tool" size="16" class="mr-1.5 flex-shrink-0"/> Tour Options
@@ -137,10 +137,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 
-// 添加展开/折叠状态
+// Add expand/collapse state
 const expanded = ref(false);
 
-// 定义类型
+// Define types
 type StepData = {
   number: number;
   description: string;
@@ -173,16 +173,16 @@ type ExhibitData = {
 
 type CardData = StepData | WelcomeData | ExhibitData;
 
-// 属性定义
+// Props definition
 const props = defineProps<{
   type: 'step' | 'welcome' | 'exhibit';
   data: CardData;
 }>();
 
-// 事件定义
+// Events definition
 defineEmits(['close', 'details', 'play-audio']);
 
-// --- Computed properties for type-safe data access ---
+// Computed properties for type-safe data access
 const stepData = computed(() => {
   return props.type === 'step' ? props.data as StepData : null;
 });
@@ -214,5 +214,4 @@ const exhibitData = computed(() => {
   transform: translateY(-10px);
 }
 
-
-</style> 
+</style>
