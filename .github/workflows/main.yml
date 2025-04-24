@@ -1,1 +1,70 @@
- 
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8 # Use pnpm version 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18 # Use Node.js version 18
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Run Lint Check
+        run: pnpm lint # Assumes 'lint' script exists in package.json
+
+      - name: Build Project
+        run: pnpm build # Builds the Nuxt app, including PWA assets
+
+      - name: Run Unit Tests
+        run: pnpm test:unit # Assumes 'test:unit' script exists
+        env:
+          CI: true # Often needed for tests in CI environment
+
+  # Optional: Upload build artifact (useful if deploying separately)
+  # deploy:
+  #   needs: build-and-test
+  #   if: github.ref == 'refs/heads/main'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
+      
+  #     - name: Setup pnpm
+  #       uses: pnpm/action-setup@v2
+  #       with:
+  #         version: 8
+
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 18
+  #         cache: 'pnpm'
+
+  #     - name: Install Dependencies
+  #       run: pnpm install
+      
+  #     - name: Build Project
+  #       run: pnpm build
+        
+  #     - name: Upload Artifact
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: production-build
+  #         path: .output # Default Nuxt build output directory 
