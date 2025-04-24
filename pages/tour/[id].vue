@@ -158,7 +158,6 @@ import { useChatStore } from '~/stores/chatStore'
 import { useTourStore, type ExhibitItem } from '~/stores/tourStore'
 import { storeToRefs } from 'pinia'
 import { useVoiceNavigation } from '~/composables/useVoiceNavigation'
-import MapSection from '~/components/tour/MapSection.vue'
 
 // 获取路由参数
 const route = useRoute()

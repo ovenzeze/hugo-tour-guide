@@ -18,12 +18,10 @@ export default defineNuxtConfig({
   css: ['~/assets/css/tailwind.css'],
 
 
-  // 添加组件自动导入配置
   components: {
     dirs: [
       {
         path: '~/components',
-        // 排除ui组件文件夹内的index.ts文件
         ignore: ['**/*/index.ts']
       }
     ]
@@ -42,10 +40,6 @@ export default defineNuxtConfig({
     preset: 'vercel'
   },
 
-
-
-
-  // 已移除content配置
   modules: [
     '@vueuse/nuxt',
     '@vueuse/motion/nuxt',
@@ -54,13 +48,11 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     '@vite-pwa/nuxt',
     '@nuxtjs/leaflet',
-    '@nuxtjs/mdc'
+    '@nuxtjs/mdc',
   ],
 
 
-  // MDC模块配置
   mdc: {
-    // 可选配置项
     highlight: {
       theme: 'github-dark'
     }
