@@ -123,7 +123,7 @@
     </div>
 
     <!-- 导览工具栏 - 简化版本 -->
-    <div class="fixed bottom-0 left-0 right-0 h-14 bg-white bg-opacity-90 backdrop-blur-sm shadow-lg z-40">
+    <div class="fixed bottom-[30px] left-0 right-0 h-14 bg-white bg-opacity-90 backdrop-blur-sm shadow-lg z-40">
       <div class="flex items-center justify-between px-4 h-full max-w-screen-xl mx-auto">
         <!-- 导游头像 -->
         <div class="flex items-center space-x-2">

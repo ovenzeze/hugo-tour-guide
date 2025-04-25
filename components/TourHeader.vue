@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/70 to-transparent pt-3 pb-8 px-4 flex justify-between items-start">
+  <div class="flex justify-between items-start pt-3 pb-8 px-4">
     <!-- 返回按钮 -->
     <button 
       class="w-10 h-10 bg-black/50 backdrop-blur-sm text-white rounded-full flex items-center justify-center shadow-lg hover:bg-black/60 transition-colors border border-white/10 flex-shrink-0"

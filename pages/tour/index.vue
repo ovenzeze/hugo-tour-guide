@@ -13,7 +13,7 @@
     />
 
     <!-- 顶部导航栏 -->
-    <div class="absolute top-0 left-0 right-0 z-10">
+    <div class="absolute top-[60px] left-0 right-0  z-10">
       <TourHeader 
         :museum-name="museumName"
         @back="goBack"
@@ -36,7 +36,7 @@
       v-model:currentFloor="currentFloor"
       :is-speaking="isSpeaking"
       :is-listening="isListening"
-      class="absolute bottom-0 left-0 right-0 z-20 tour-toolbar-container"
+      class="absolute bottom-[20px] left-0 right-0 z-20"
       @ask-guide="openGuideDialog"
       @start-listening="startListening"
       @stop-listening="stopListening"
