@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-white/80 backdrop-blur-sm h-16 shrink-0 sticky top-0 z-50">
+  <header class="bg-white/80 backdrop-blur-sm h-16 shrink-0 z-50">
     <div class="container mx-auto px-4 h-full flex flex-row items-center justify-between ">
       <!-- Left area: Back button -->
       <div class="h-full w-10 flex flex-row items-center justify-center pt-2">

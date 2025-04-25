@@ -36,7 +36,7 @@
       v-model:currentFloor="currentFloor"
       :is-speaking="isSpeaking"
       :is-listening="isListening"
-      class="absolute bottom-0 left-0 right-0 z-20"
+      class="absolute bottom-0 left-0 right-0 z-20 tour-toolbar-container"
       @ask-guide="openGuideDialog"
       @start-listening="startListening"
       @stop-listening="stopListening"
@@ -234,3 +234,10 @@ onMounted(() => {
   document.head.appendChild(link)
 })
 </script>
+
+<style scoped>
+/* 底部工具栏容器，利用全局变量添加底部安全区域 */
+.tour-toolbar-container {
+  padding-bottom: var(--safe-area-bottom, 0px);
+}
+</style>
