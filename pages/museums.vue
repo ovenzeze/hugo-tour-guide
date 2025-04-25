@@ -1,5 +1,8 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-4 py-8"
+       v-motion
+       :initial="{ opacity: 0 }"
+       :enter="{ opacity: 1, transition: { duration: 300 } }">
     <h1 class="text-3xl font-bold mb-8">Available Museums</h1>
     
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -1,5 +1,8 @@
 <template>
-  <div class="container mx-auto p-4">
+  <div class="container mx-auto p-4" 
+       v-motion
+       :initial="{ opacity: 0 }"
+       :enter="{ opacity: 1, transition: { duration: 300 } }">
     <!-- 筛选栏 -->
     <div
       class="flex flex-wrap gap-3 items-center mb-4"

@@ -1,6 +1,6 @@
 <template>
   <div class="h-full w-full max-h-full relative bg-gray-50" v-motion :initial="{ opacity: 0 }"
-    :enter="{ opacity: 1, transition: { duration: 0.5 } }">
+    :enter="{ opacity: 1, transition: { duration: 300 } }">
 
     <!-- 地图组件 - 设置合理的内边距，避免被其他组件完全覆盖 -->
     <div class="absolute inset-0 z-0">

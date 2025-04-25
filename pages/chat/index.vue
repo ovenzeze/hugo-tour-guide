@@ -1,279 +1,418 @@
 <template>
-  <div class="flex flex-col h-[calc(100dvh-theme(spacing.16)-theme(spacing.1))] relative bg-background font-sans">
-    <!-- Chat Header (Simplified) -->
-    <!-- The main app header already provides context -->
-    
-    <!-- Chat Messages Area -->
-    <div ref="messageContainer" class="flex-1 overflow-y-auto p-4 space-y-3 scroll-smooth">
-      <TransitionGroup name="chat" tag="div" class="space-y-3">
-        <div 
-          v-for="msg in messages" 
-          :key="msg.id" 
-          class="flex"
-          :class="msg.sender === 'user' ? 'justify-end' : 'justify-start'"
-        >
-          <!-- AI Avatar -->
-          <div v-if="msg.sender === 'ai'" class="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center mr-2 flex-shrink-0">
-            <span class="text-blue-600 text-xs font-bold">AI</span>
-          </div>
-          
-          <!-- Message Bubble -->
-          <div 
-            class="max-w-[80%] rounded-lg px-3 py-2 shadow-sm break-words text-sm" 
-            :class="msg.sender === 'user' 
-              ? 'bg-blue-600 text-white rounded-br-none' 
-              : 'bg-gray-100 text-gray-900 rounded-bl-none'" 
-          >
-            <p>{{ msg.content }}</p> 
-            <div class="text-xs mt-1 opacity-60 text-right" :class="msg.sender === 'user' ? 'text-blue-100' : 'text-gray-500'">
-              {{ formatTimestamp(msg.timestamp) }}
+  <div class="container mx-auto px-4 py-6"
+       v-motion
+       :initial="{ opacity: 0 }"
+       :enter="{ opacity: 1, transition: { duration: 300 } }">
+    <h1 class="text-2xl font-bold mb-6 border-b pb-2">ElevenLabs TTS Tool</h1>
+
+    <Card>
+      <CardHeader>
+        <CardTitle class="text-lg text-teal-800">ElevenLabs TTS Debug Tool</CardTitle>
+        <CardDescription>
+          Enhanced TTS testing and debugging interface built with shadcn-vue components.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs default-value="generate">
+          <TabsList class="grid w-full grid-cols-3 mb-4">
+            <TabsTrigger value="config">Configuration</TabsTrigger>
+            <TabsTrigger value="generate">Generate & Playback</TabsTrigger>
+            <TabsTrigger value="debug">Debug Log</TabsTrigger>
+          </TabsList>
+
+          <!-- Configuration Tab -->
+          <TabsContent value="config">
+            <div class="space-y-6 p-1">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label for="voice-select">Select Voice</Label>
+                  <Select id="voice-select" v-model="selectedVoiceId" @update:modelValue="handleVoiceChange">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a voice..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem v-for="voice in availableVoices" :key="voice.id" :value="voice.id">
+                          {{ voice.name }} ({{ voice.language }})
+                        </SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  <p v-if="selectedVoiceConfig" class="text-xs text-muted-foreground mt-1">
+                    ID: {{ selectedVoiceConfig.id }} | Model: {{ selectedVoiceConfig.modelId }}
+                  </p>
+                </div>
+                <div>
+                  <Label for="model-select">Select Model (Override)</Label>
+                  <Select id="model-select" v-model="selectedModelId">
+                      <SelectTrigger>
+                      <SelectValue placeholder="Default or select model..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="">Use Voice Default Model</SelectItem>
+                        <SelectItem v-for="(modelId, key) in elevenLabsConfig.models" :key="key" :value="modelId">
+                          {{ key }} ({{ modelId }})
+                        </SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                    <p class="text-xs text-muted-foreground mt-1">
+                    Overrides the default model for the selected voice above.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <Label :for="`stability-slider-${_uid}`">Stability ({{ (ttsSettings.stability ?? 0).toFixed(2) }})</Label>
+                <Slider
+                  :id="`stability-slider-${_uid}`"
+                  :model-value="[ttsSettings.stability ?? elevenLabsConfig.defaultSettings.stability]"
+                  @update:model-value="val => ttsSettings.stability = val[0]"
+                  :min="0" :max="1" :step="0.05"
+                  :default-value="[elevenLabsConfig.defaultSettings.stability]"
+                  class="my-2"
+                />
+                <p class="text-xs text-muted-foreground">Higher values are more stable but might be monotonous; lower values are more expressive but might be unstable.</p>
+              </div>
+
+                <div>
+                <Label :for="`similarity-slider-${_uid}`">Similarity Boost ({{ (ttsSettings.similarity_boost ?? 0).toFixed(2) }})</Label>
+                <Slider
+                  :id="`similarity-slider-${_uid}`"
+                    :model-value="[ttsSettings.similarity_boost ?? elevenLabsConfig.defaultSettings.similarity_boost]"
+                  @update:model-value="val => ttsSettings.similarity_boost = val[0]"
+                  :min="0" :max="1" :step="0.05"
+                  :default-value="[elevenLabsConfig.defaultSettings.similarity_boost]"
+                    class="my-2"
+                />
+                  <p class="text-xs text-muted-foreground">Higher values boost resemblance to the original voice but may cause artifacts; default is recommended.</p>
+              </div>
+
+              <div v-if="isStyleSupported">
+                <Label :for="`style-slider-${_uid}`">Style Exaggeration ({{ (ttsSettings.style ?? 0).toFixed(2) }})</Label>
+                <Slider
+                  :id="`style-slider-${_uid}`"
+                    :model-value="[ttsSettings.style ?? 0]"
+                  @update:model-value="val => ttsSettings.style = val[0]"
+                  :min="0" :max="1" :step="0.05"
+                  :default-value="[elevenLabsConfig.defaultSettings.style || 0]"
+                  class="my-2"
+                />
+                <p class="text-xs text-muted-foreground">Boost the intensity of the speech style (only supported by some models).</p>
+              </div>
+
+              <div class="flex items-center space-x-2">
+                <Switch id="speaker-boost-switch" v-model:checked="ttsSettings.use_speaker_boost" />
+                <Label for="speaker-boost-switch">Use Speaker Boost</Label>
+                <p class="text-xs text-muted-foreground ml-auto">Improves audio quality and pronunciation clarity (recommended).</p>
+              </div>
+
             </div>
-          </div>
-        </div>
-      </TransitionGroup>
-      <!-- AI Typing Indicator -->
-      <div v-if="isAiTyping" class="flex justify-start items-center transition-opacity duration-300 pt-1">
-         <div class="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center mr-2 flex-shrink-0">
-            <span class="text-blue-600 text-xs font-bold">AI</span>
-          </div>
-        <div class="bg-gray-100 text-gray-500 rounded-lg px-4 py-2 shadow-sm rounded-bl-none">
-          <span class="typing-indicator">
-            <span>.</span><span>.</span><span>.</span>
-          </span>
-        </div>
-      </div>
-    </div>
-  
-    <!-- Input Area -->
-    <div class="bg-background border-t border-border px-3 py-2 sticky bottom-0">
-      <div class="flex items-center space-x-2">
-        <!-- Text Input -->
-        <input 
-          type="text" 
-          v-model="userInput"
-          placeholder="Type your message..."
-          class="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-1 focus:ring-blue-300 focus:border-blue-300 text-sm h-10"
-          @keyup.enter="sendMessage"
-        />
-        <!-- Voice Input Button -->
-        <button 
-          @click="toggleListening"
-          class="w-10 h-10 flex items-center justify-center rounded-full transition-colors text-gray-600 hover:bg-gray-100"
-          :class="{ 'bg-red-100 !text-red-600 hover:bg-red-200': isListening }" 
-          title="Voice Input"
-        >
-          <Icon :name="isListening ? 'ph:stop' : 'ph:microphone'" class="w-5 h-5" />
-        </button>
-        <!-- Send Button -->
-        <button 
-          @click="sendMessage" 
-          :disabled="!userInput.trim()"
-          class="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors flex-shrink-0"
-          title="Send"
-        >
-          <Icon name="ph:paper-plane-right" class="w-5 h-5" />
-        </button>
-      </div>
-       <!-- Display recognized speech (optional) -->
-      <div v-if="transcript && isListening" class="text-xs text-gray-500 pt-1 pl-2 h-4">
-        {{ transcript }}...
-      </div>
-       <div v-else class="h-4 pt-1"></div> <!-- Placeholder to prevent layout shift -->
-    </div>
+          </TabsContent>
+
+          <!-- Generate & Playback Tab -->
+          <TabsContent value="generate">
+              <div class="space-y-4">
+                <!-- Prompt Examples -->
+              <div v-if="selectedVoiceConfig?.promptExamples && Object.keys(selectedVoiceConfig.promptExamples).length > 0">
+                <Label class="block text-sm font-medium mb-1">Prompt Examples:</Label>
+                <div class="flex flex-wrap gap-2">
+                  <Button
+                    v-for="(prompt, key) in selectedVoiceConfig.promptExamples"
+                    :key="key"
+                    @click="loadPromptExample(prompt)"
+                    variant="outline"
+                    size="sm"
+                  >
+                    Load "{{ key }}"
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <Label for="tts-input">Input Text</Label>
+                <Textarea
+                  id="tts-input"
+                  v-model="elevenLabsInputText"
+                  placeholder="Enter text here to synthesize..."
+                  class="mt-1 min-h-[80px]"
+                  rows="4"
+                />
+              </div>
+
+              <div class="flex flex-wrap gap-2 items-center">
+                <Button @click="handleElevenLabsGenerate" :disabled="elevenLabsIsLoading">
+                  <Icon v-if="!elevenLabsIsLoading" name="ph:play-circle" class="mr-2 h-4 w-4" />
+                    <Icon v-else name="svg-spinners:180-ring-with-bg" class="mr-2 h-4 w-4" />
+                  {{ elevenLabsIsLoading ? 'Generating...' : 'Generate Speech' }}
+                </Button>
+                  <Button
+                  v-if="elevenLabsInputText"
+                  @click="elevenLabsInputText = ''"
+                  variant="outline"
+                >
+                  Clear Text
+                </Button>
+              </div>
+
+              <Alert v-if="elevenLabsError" variant="destructive">
+                <Icon name="ph:warning-circle" class="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                  {{ elevenLabsError }}
+                </AlertDescription>
+              </Alert>
+
+              <div v-if="elevenLabsAudioUrl">
+                  <Label>Playback Generated Audio</Label>
+                  <audio controls :src="elevenLabsAudioUrl" class="w-full mt-1">
+                  Your browser does not support the audio element.
+                </audio>
+                <div class="flex gap-2 mt-2">
+                  <Button @click="clearElevenLabsAudio" variant="outline" size="sm">
+                    Clear Audio
+                  </Button>
+                  <Button v-if="elevenLabsAudioData" @click="downloadAudio" variant="outline" size="sm">
+                      <Icon name="ph:download-simple" class="mr-1 h-4 w-4" />
+                      Download MP3
+                  </Button>
+                </div>
+              </div>
+              </div>
+          </TabsContent>
+
+          <!-- Debug Log Tab -->
+          <TabsContent value="debug">
+              <div class="space-y-4">
+              <Alert v-if="lastRequestPayload">
+                <Icon name="ph:code" class="h-4 w-4" />
+                <AlertTitle>Last Request Payload</AlertTitle>
+                <AlertDescription>
+                  <pre class="mt-2 w-full rounded-md bg-slate-950 p-4 overflow-x-auto">
+                    <code class="text-white">{{ JSON.stringify(lastRequestPayload, null, 2) }}</code>
+                  </pre>
+                </AlertDescription>
+              </Alert>
+                <Alert v-if="lastResponseInfo" :variant="lastResponseInfo.ok ? 'default' : 'destructive'">
+                  <Icon :name="lastResponseInfo.ok ? 'ph:check-circle' : 'ph:warning-circle'" class="h-4 w-4" />
+                  <AlertTitle>Last Response Info</AlertTitle>
+                <AlertDescription>
+                    <pre class="mt-2 w-full rounded-md bg-slate-950 p-4 overflow-x-auto">
+                    <code class="text-white">{{ JSON.stringify(lastResponseInfo, null, 2) }}</code>
+                  </pre>
+                </AlertDescription>
+              </Alert>
+              <Alert v-if="!lastRequestPayload && !lastResponseInfo">
+                  <Icon name="ph:info" class="h-4 w-4" />
+                  <AlertTitle>No Debug Information</AlertTitle>
+                <AlertDescription>
+                  Generate speech once to see relevant request and response information here.
+                </AlertDescription>
+              </Alert>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue'
-import { useSpeechSynthesis } from '~/composables/useSpeechSynthesis'
-import { useSpeechRecognition } from '~/composables/useSpeechRecognition'
+// Vue imports
+import { ref, computed, onMounted, watch, getCurrentInstance } from 'vue'
 
-// Define page meta
+// Composables and Config
+import { useElevenLabsTTS } from '~/composables/useElevenLabsTTS'
+import elevenlabsConfigImport, { getAllVoices, findVoiceById } from '~/config/elevenlabs' // Import config object directly
+import type { Voice } from '~/types/voice'
+
+// Shadcn-vue component imports
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+
+// Define page meta for title
 definePageMeta({
-  title: 'Chat with Guide'
+  title: 'TTS Tool'
 })
 
-// Define message type
-interface ChatMessage {
-  id: number;
-  sender: 'user' | 'ai';
-  content: string;
-  timestamp: Date;
-}
+// --- ElevenLabs TTS State ---
+const {
+  audioUrl: elevenLabsAudioUrl,
+  audioData: elevenLabsAudioData, // Get Blob data
+  isLoading: elevenLabsIsLoading,
+  error: elevenLabsError,
+  generateTTS, // Use the base generator
+  clearAudio: clearElevenLabsAudioBase,
+} = useElevenLabsTTS()
 
-// State
-const messages = ref<ChatMessage[]>([])
-const userInput = ref('')
-const isAiTyping = ref(false)
-const messageContainer = ref<HTMLElement | null>(null)
+const elevenLabsConfig = elevenlabsConfigImport // Use imported config
+const availableVoices = ref<Voice.Config[]>([])
+const selectedVoiceId = ref<string | undefined>(undefined)
+const selectedModelId = ref<string>('') // Empty string means use voice default
+const elevenLabsInputText = ref('')
 
-// Composables
-const { speak, isSpeaking: isSynthesizing } = useSpeechSynthesis({ lang: 'zh-CN', rate: 1.0 })
-const { 
-  startListening, 
-  stopListening, 
-  isListening, 
-  transcript, 
-  interimTranscript, // Use interim for live feedback
-  error: recognitionError 
-} = useSpeechRecognition({ 
-  lang: 'zh-CN', 
-  continuous: true, // Keep listening 
-  interimResults: true // Get live results
+// Reactive object for TTS settings
+const ttsSettings = ref({
+  stability: elevenLabsConfig.defaultSettings.stability,
+  similarity_boost: elevenLabsConfig.defaultSettings.similarity_boost,
+  style: elevenLabsConfig.defaultSettings.style || 0,
+  use_speaker_boost: elevenLabsConfig.defaultSettings.use_speaker_boost !== undefined ? elevenLabsConfig.defaultSettings.use_speaker_boost : true,
 })
 
-// --- Lifecycle and Watchers ---
-onMounted(() => {
-  // Initial welcome message
-  if (messages.value.length === 0) {
-    isAiTyping.value = true;
-    setTimeout(() => {
-      const welcomeMessage = "你好！我是你的AI语音助手。你可以通过语音与我交流，或者直接发送文字消息。有什么我可以帮助你的吗？"
-      addMessage('ai', welcomeMessage)
-      isAiTyping.value = false;
-    }, 1200) 
-  }
-  scrollToBottom();
+// Debugging state
+const lastRequestPayload = ref<object | null>(null)
+const lastResponseInfo = ref<object | null>(null) // Store response status/error details
+
+// Get component instance uid for unique IDs
+const instance = getCurrentInstance()
+const _uid = instance?.uid || Math.random().toString(36).substring(7) // Fallback for unique ID
+
+// --- Computed Properties ---
+const selectedVoiceConfig = computed(() => {
+  return selectedVoiceId.value ? findVoiceById(selectedVoiceId.value) : null
 })
 
-// Scroll to bottom when messages change
-watch(messages, async () => {
-  await nextTick() 
-  scrollToBottom()
-}, { deep: true })
-
-// Watch for final transcript when listening stops
-watch(transcript, (finalTranscript) => {
-    if (finalTranscript && !isListening.value) { // Process final transcript only when listening stops
-        userInput.value = finalTranscript; 
-        sendMessage(); 
-    }
-});
+// Check if the currently selected (or default) model supports style exaggeration
+const isStyleSupported = computed(() => {
+  const model = selectedModelId.value || selectedVoiceConfig.value?.modelId
+  // Adjust based on actual ElevenLabs model IDs that support style
+  return model?.includes('eleven_multilingual_v2') || model?.includes('eleven_english_v2');
+})
 
 // --- Methods ---
-
-// Add message to list
-function addMessage(sender: 'user' | 'ai', content: string) {
-  messages.value.push({
-    id: Date.now(), 
-    sender,
-    content,
-    timestamp: new Date()
-  })
+const clearElevenLabsAudio = () => {
+  clearElevenLabsAudioBase()
+  lastRequestPayload.value = null // Clear debug info as well
+  lastResponseInfo.value = null
 }
 
-// Send user message
-async function sendMessage() {
-  const messageContent = userInput.value.trim()
-  if (!messageContent || isSynthesizing.value) return // Prevent sending empty or while AI is speaking
+// Load voices on mount
+onMounted(async () => {
+  availableVoices.value = getAllVoices()
+  // Optionally set a default voice
+  // selectedVoiceId.value = availableVoices.value.find(v => v.is_default)?.id || availableVoices.value[0]?.id;
+  // if(selectedVoiceId.value) handleVoiceChange(selectedVoiceId.value);
+})
 
-  addMessage('user', messageContent)
-  const currentInput = userInput.value // Store before clearing
-  userInput.value = '' 
-  
-  // Stop listening if user sends text manually
-  if (isListening.value) {
-    stopListening()
+// Handle voice selection change
+const handleVoiceChange = (voiceIdPayload: string | null | undefined | number | Record<string, any>) => {
+  const voiceId = typeof voiceIdPayload === 'string' ? voiceIdPayload : undefined;
+
+  if (!voiceId) {
+    selectedVoiceId.value = undefined
+    Object.assign(ttsSettings.value, elevenLabsConfig.defaultSettings); // Use .value here
+    selectedModelId.value = '';
+    return;
   }
-
-  isAiTyping.value = true
-  setTimeout(async () => {
-    const aiResponse = generateResponse(currentInput) // Use stored input
-    addMessage('ai', aiResponse)
-    isAiTyping.value = false
-    
-    // Optional: Speak AI response
-    // await speak(aiResponse).catch(err => console.error("Error speaking response:", err));
-  }, 1500 + Math.random() * 1000) 
-}
-
-// Toggle voice listening state
-function toggleListening() {
-  if (isListening.value) {
-    stopListening() 
-    // Transcript watcher will handle sending the message
-  } else {
-    userInput.value = '' // Clear text input when starting voice
-    startListening()
+  selectedVoiceId.value = voiceId
+  const voice = findVoiceById(voiceId)
+  if (voice) {
+    Object.assign(ttsSettings.value, { ...elevenLabsConfig.defaultSettings, ...voice.settings }); // Use .value here
+    selectedModelId.value = ''; // Reset model override when voice changes
+     if (!isStyleSupported.value) {
+        ttsSettings.value.style = 0; // Reset style if not supported by the new voice/model
+     }
   }
 }
 
-// Scroll message container to the bottom
-function scrollToBottom() {
-  if (messageContainer.value) {
-    messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+// Load prompt example into textarea
+const loadPromptExample = (prompt: string) => {
+  elevenLabsInputText.value = prompt
+}
+
+// Handle TTS generation click
+const handleElevenLabsGenerate = async () => {
+  if (!elevenLabsInputText.value || !selectedVoiceId.value) {
+    elevenLabsError.value = 'Please select a voice and enter text.'
+    return
+  }
+
+  const voiceConfig = selectedVoiceConfig.value;
+  if (!voiceConfig) {
+     elevenLabsError.value = 'Could not find configuration for the selected voice.'
+     return;
+  }
+
+  // Prepare options, overriding defaults with UI settings
+  const options = {
+    voiceId: selectedVoiceId.value,
+    modelId: selectedModelId.value || voiceConfig.modelId || elevenLabsConfig.models.multilingual,
+    voiceSettings: {
+      stability: ttsSettings.value.stability ?? elevenLabsConfig.defaultSettings.stability,
+      similarity_boost: ttsSettings.value.similarity_boost ?? elevenLabsConfig.defaultSettings.similarity_boost,
+      ...(isStyleSupported.value && (ttsSettings.value.style ?? 0) > 0 && { style: ttsSettings.value.style }),
+      use_speaker_boost: ttsSettings.value.use_speaker_boost ?? true,
+    },
+  };
+
+  // Store request payload for debugging
+  lastRequestPayload.value = {
+    text: elevenLabsInputText.value.substring(0, 500), // Limit text length in debug log
+    ...options
+  }
+  lastResponseInfo.value = null // Clear previous response info
+
+  try {
+    await generateTTS(elevenLabsInputText.value, options)
+    if (!elevenLabsError.value) {
+       lastResponseInfo.value = { ok: true, status: 200, timestamp: new Date().toISOString() }
+    } else {
+       lastResponseInfo.value = { ok: false, error: elevenLabsError.value ?? 'Unknown error after generation', timestamp: new Date().toISOString() }
+    }
+  } catch(err: any) {
+      console.error("Error during TTS generation:", err);
+      const errorMsg = err.message || 'An unexpected error occurred during generation.';
+      elevenLabsError.value = errorMsg;
+      lastResponseInfo.value = { ok: false, error: errorMsg, message: err.message, stack: err.stack, timestamp: new Date().toISOString() }
   }
 }
 
-// Format timestamp for display
-function formatTimestamp(date: Date): string {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute:'2-digit', hour12: false })
+// Download audio function
+const downloadAudio = () => {
+  if (!elevenLabsAudioData.value) return;
+  const url = URL.createObjectURL(elevenLabsAudioData.value);
+  const a = document.createElement('a');
+  a.href = url;
+  const voiceName = selectedVoiceConfig.value?.name?.replace(/\s+/g, '_') || 'audio';
+  const timestamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+  a.download = `elevenlabs_${voiceName}_${timestamp}.mp3`; // Assuming MP3 format
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
-// Mock AI response generation
-function generateResponse(query: string): string {
-  query = query.toLowerCase(); 
-  if (query.includes('你好') || query.includes('您好')) {
-    return '你好！很高兴和你交流。我可以帮助你回答问题或者提供展品信息。'
+// Watch for style support changes
+watch(isStyleSupported, (newVal) => {
+  if (!newVal && ttsSettings.value.style > 0) {
+    // Reset style if it becomes unsupported
+    // ttsSettings.value.style = 0; // Optionally reset the value
   }
-  if (query.includes('名字') || query.includes('谁')) {
-    return '我是博物馆的AI语音助手，可以为您提供展品信息和参观指南。'
-  }
-  if (query.includes('展品') || query.includes('藏品')) {
-    return '我们博物馆有众多精彩展品，包括古埃及文物、欧洲艺术品、亚洲艺术收藏等。您对哪个展区比较感兴趣呢？'
-  }
-  if (query.includes('时间') || query.includes('开放')) {
-    return '博物馆每天上午9点至下午5点开放，周一闭馆。特别展览可能有不同的开放时间。'
-  }
-  return `关于"${query}"，我正在学习相关知识。您可以问我一些关于常见展品或开放时间的问题。`
-}
-
-// Optional: Clear chat function (removed from template for simplicity, can be added back)
-// function clearChat() { ... }
+});
 
 </script>
 
 <style scoped>
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+/* Style for debug pre blocks */
+pre {
+  white-space: pre-wrap;       /* CSS 3 */
+  white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+  white-space: -pre-wrap;      /* Opera 4-6 */
+  white-space: -o-pre-wrap;    /* Opera 7 */
+  word-wrap: break-word;       /* Internet Explorer 5.5+ */
+  font-family: 'Courier New', Courier, monospace; /* Monospaced font */
+  font-size: 0.8rem; /* Slightly smaller font */
+  line-height: 1.4;
 }
-
-.chat-enter-active,
-.chat-leave-active {
-  transition: all 0.3s ease-out;
-}
-.chat-enter-from {
-  opacity: 0;
-  transform: translateY(15px);
-}
-.chat-leave-to {
-  opacity: 0;
-}
-
-/* Typing Indicator Animation */
-.typing-indicator span {
-  display: inline-block;
-  width: 4px;
-  height: 4px;
-  background-color: currentColor;
-  border-radius: 50%;
-  margin: 0 1px;
-  animation: typing 1s infinite ease-in-out;
-}
-
-.typing-indicator span:nth-child(1) {
-  animation-delay: 0s;
-}
-.typing-indicator span:nth-child(2) {
-  animation-delay: 0.15s;
-}
-.typing-indicator span:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-@keyframes typing {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+code {
+ font-family: 'Courier New', Courier, monospace; /* Ensure code block uses monospace */
 }
 </style>
