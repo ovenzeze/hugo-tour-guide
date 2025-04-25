@@ -1,7 +1,13 @@
 <template>
   <div class="relative h-full w-full bg-gray-50">
     <!-- 欢迎弹窗 -->
-    <TourWelcome v-if="!userHasInteracted" @start="startWithUserInteraction" class="absolute inset-0 z-30"/>
+    <TourWelcome 
+      v-if="!userHasInteracted" 
+      @start="startWithUserInteraction" 
+      @toggle-mute="setGlobalMute"
+      @close="userHasInteracted = true"
+      class="absolute inset-0 z-30"
+    />
 
     <!-- 地图组件 -->
     <TourMap 
@@ -13,7 +19,7 @@
     />
 
     <!-- 顶部导航栏 -->
-    <div class="absolute top-[60px] left-0 right-0  z-10">
+    <div class="absolute top-[20px] left-0 right-0  z-10" :class="{ 'top-[60px]': isPwa }">
       <TourHeader 
         :museum-name="museumName"
         @back="goBack"
@@ -34,13 +40,16 @@
     <!-- 底部工具栏 -->
     <TourToolbar 
       v-model:currentFloor="currentFloor"
-      :is-speaking="isSpeaking"
+      :is-playing="isPlaying"
       :is-listening="isListening"
-      class="absolute bottom-[20px] left-0 right-0 z-20"
+      :is-paused="isPaused"
       @ask-guide="openGuideDialog"
       @start-listening="startListening"
       @stop-listening="stopListening"
       @start-tour="startGuidedTour"
+      @pause-audio="pauseAudio"
+      @resume-audio="resumeAudio"
+      class="absolute bottom-[20px] left-0 right-0 z-20 tour-toolbar-container"
     />
   </div>
 </template>
@@ -74,14 +83,19 @@ const router = useRouter()
 // 使用store
 const tourStore = useTourStore()
 const { currentMuseum } = tourStore
-
+const { isPwa } = usePwa()
 // 使用语音导航
 const { 
   playWelcomeIntroduction, 
   speak, 
   explainExhibit, 
-  isSpeaking, 
-  isListening 
+  isSpeaking,
+  isPlaying,
+  isListening,
+  setGlobalMute,
+  isPaused,
+  pauseAudio,
+  resumeAudio
 } = useVoiceNavigation()
 
 // 定义接口

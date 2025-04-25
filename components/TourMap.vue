@@ -7,7 +7,11 @@
     @mousemove.prevent="onMouseMove"
     @mouseup.prevent="onMouseUp"
     @mouseleave.prevent="onMouseLeave"
-    :style="{ cursor: isPanning ? 'grabbing' : 'grab' }"
+    @touchstart.prevent="onTouchStart"
+    @touchmove.prevent="onTouchMove"
+    @touchend.prevent="onTouchEnd"
+    @touchcancel.prevent="onTouchEnd"
+    :style="{ cursor: isPanning ? 'grabbing' : 'grab', 'touch-action': 'none' }"
   >
     <!-- 地图图像包装器 -->
     <div
@@ -116,6 +120,14 @@ const dragStartX = ref(0)
 const dragStartY = ref(0)
 const minScale = ref(0.3)
 const maxScale = ref(4)
+
+// Touch interaction state
+const touchStartX = ref(0)
+const touchStartY = ref(0)
+const lastTouchX = ref(0) // For single touch panning delta
+const lastTouchY = ref(0)
+const touchStartDistance = ref(0) // For pinch zoom
+const isPinching = ref(false)
 
 // 当前楼层地图的URL
 const floorMapUrl = computed(() => {
@@ -333,6 +345,118 @@ onMounted(() => {
   // 初始化地图视图
   resetView()
 })
+
+// ------------------------------------------------------------------------
+// Touch Event Handlers
+// ------------------------------------------------------------------------
+function getDistance(touch1: Touch, touch2: Touch): number {
+  const dx = touch1.clientX - touch2.clientX;
+  const dy = touch1.clientY - touch2.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function getMidpoint(touch1: Touch, touch2: Touch): { x: number; y: number } {
+  return {
+    x: (touch1.clientX + touch2.clientX) / 2,
+    y: (touch1.clientY + touch2.clientY) / 2,
+  };
+}
+
+function onTouchStart(event: TouchEvent) {
+  if (event.touches.length === 1) {
+    // Single finger touch - Start panning
+    isPanning.value = true;
+    isPinching.value = false; // Ensure not pinching
+    const touch = event.touches[0];
+    touchStartX.value = touch.clientX - translateX.value; // Store relative start
+    touchStartY.value = touch.clientY - translateY.value;
+    lastTouchX.value = touch.clientX; // Store absolute start for delta calculation in move
+    lastTouchY.value = touch.clientY;
+  } else if (event.touches.length === 2) {
+    // Two finger touch - Start pinch zoom
+    isPanning.value = false; // Ensure not panning
+    isPinching.value = true;
+    const touch1 = event.touches[0];
+    const touch2 = event.touches[1];
+    touchStartDistance.value = getDistance(touch1, touch2);
+
+    // Store initial translation and scale for relative calculations
+    dragStartX.value = translateX.value; // Re-use dragStart for initial translation
+    dragStartY.value = translateY.value;
+    // scaleStartValue = scale.value; // Need a state for initial scale if doing relative scale calc
+
+  }
+}
+
+function onTouchMove(event: TouchEvent) {
+  if (isPanning.value && event.touches.length === 1) {
+    // Single finger move - Pan
+    const touch = event.touches[0];
+    // Calculate absolute delta from last move event for smoother panning
+    // const deltaX = touch.clientX - lastTouchX.value;
+    // const deltaY = touch.clientY - lastTouchY.value;
+    // translateX.value += deltaX;
+    // translateY.value += deltaY;
+    // lastTouchX.value = touch.clientX;
+    // lastTouchY.value = touch.clientY;
+
+     // Calculate relative translation
+     translateX.value = touch.clientX - touchStartX.value;
+     translateY.value = touch.clientY - touchStartY.value;
+
+  } else if (isPinching.value && event.touches.length === 2) {
+    // Two finger move - Pinch zoom
+    if (!viewportRef.value) return;
+
+    const touch1 = event.touches[0];
+    const touch2 = event.touches[1];
+    const currentDistance = getDistance(touch1, touch2);
+    const scaleFactor = currentDistance / touchStartDistance.value;
+
+    let newScale = Math.max(
+        minScale.value,
+        Math.min(scale.value * scaleFactor, maxScale.value) // Apply relative scale factor
+    );
+
+    // --- Zoom towards the midpoint of the fingers ---
+    const midpoint = getMidpoint(touch1, touch2);
+    const rect = viewportRef.value.getBoundingClientRect();
+    const pinchCenterX = midpoint.x - rect.left;
+    const pinchCenterY = midpoint.y - rect.top;
+
+    // Calculate the image point under the pinch center BEFORE scaling
+    const imagePointX = (pinchCenterX - translateX.value) / scale.value;
+    const imagePointY = (pinchCenterY - translateY.value) / scale.value;
+
+    // Apply the new scale temporarily to calculate new translation
+    const oldScale = scale.value; // Store old scale for potential revert or smoother calc
+    scale.value = newScale;
+
+    // Calculate the new translation needed to keep the same image point under the pinch center AFTER scaling
+    translateX.value = pinchCenterX - imagePointX * newScale;
+    translateY.value = pinchCenterY - imagePointY * newScale;
+
+    // Update start distance for continuous scaling feel
+    touchStartDistance.value = currentDistance;
+  }
+}
+
+function onTouchEnd(event: TouchEvent) {
+  // If touches drop to 1, might transition from pinch to pan
+  if (isPinching.value && event.touches.length === 1) {
+      isPinching.value = false;
+      isPanning.value = true; // Start panning with the remaining finger
+      const touch = event.touches[0];
+      touchStartX.value = touch.clientX - translateX.value;
+      touchStartY.value = touch.clientY - translateY.value;
+      // lastTouchX.value = touch.clientX; // Reset last touch for delta panning
+      // lastTouchY.value = touch.clientY;
+  } else if (event.touches.length === 0) {
+      // All fingers lifted
+      isPanning.value = false;
+      isPinching.value = false;
+  }
+}
 
 // 暴露方法给父组件
 defineExpose({

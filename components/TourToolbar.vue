@@ -1,12 +1,20 @@
 <template>
   <div class=" py-2.5 px-3 flex items-center justify-between border-t ">
     <!-- 导游头像 -->
-    <div class="w-10 h-10 rounded-full bg-black/75 flex items-center justify-center overflow-hidden relative flex-shrink-0">
+    <div 
+      class="w-10 h-10 rounded-full bg-black/75 flex items-center justify-center overflow-hidden relative flex-shrink-0 cursor-pointer transition-opacity hover:opacity-80" 
+      @click="handleAvatarClick" 
+      role="button"
+      aria-label="Toggle audio playback"
+    >
       <div class="flex items-center justify-center text-white/75">
-        <icon name="ph:user" size="20" />
+        <icon 
+          :name="isPlaying ? 'ph:speaker-high' : (isPaused ? 'ph:pause' : 'ph:user')" 
+          size="20" 
+        />
       </div>
-      <!-- 语音波浪动画 -->
-      <div v-if="isSpeaking" class="absolute inset-0 flex items-center justify-center">
+      <!-- 语音波浪动画 (only when playing) -->
+      <div v-if="isPlaying" class="absolute inset-0 flex items-center justify-center">
         <div class="voice-wave bg-white/30"></div>
       </div>
     </div>
@@ -44,12 +52,31 @@ import { computed } from 'vue';
 
 // 属性定义
 const props = defineProps<{
-  isSpeaking: boolean;
+  isPlaying: boolean;
+  isPaused: boolean;
   isListening: boolean;
 }>();
 
 // 事件定义
-const emit = defineEmits(['ask-guide', 'start-listening', 'stop-listening', 'start-tour']);
+const emit = defineEmits([
+  'ask-guide',
+  'start-listening',
+  'stop-listening',
+  'start-tour',
+  'pause-audio',
+  'resume-audio'
+]);
+
+// 点击头像处理
+function handleAvatarClick() {
+  if (props.isPlaying) {
+    emit('pause-audio');
+  } else if (props.isPaused) {
+    emit('resume-audio');
+  } else {
+    console.log('Avatar clicked while idle.');
+  }
+}
 </script>
 
 <style scoped>

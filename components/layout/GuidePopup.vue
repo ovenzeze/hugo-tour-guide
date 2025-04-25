@@ -83,17 +83,18 @@ import BottomDrawer from '../ui/BottomDrawer.vue'
 const showPopup = ref(false)
 
 onMounted(() => {
-  // 延迟显示弹窗，给用户一些时间先浏览页面
-  setTimeout(() => {
-    // 检查是否为Safari浏览器
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
-    // 检查是否已经显示过弹窗
-    const hasShown = localStorage.getItem('hasShownGuidePopup')
-    
-    if (isSafari && !hasShown) {
-      showPopup.value = true
-    }
-  }, 2000) // 延迟2秒显示
+  console.log('GuidePopup mounted.');
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const hasShown = localStorage.getItem('hasShownGuidePopup');
+  console.log('isSafari:', isSafari);
+  console.log('hasShownGuidePopup:', hasShown);
+
+  if (isSafari && !hasShown) {
+    console.log('Conditions met, setting showPopup to true.');
+    showPopup.value = true;
+  } else {
+    console.log('Conditions not met, popup will not show.');
+  }
 })
 
 const closePopup = () => {

@@ -1,4 +1,4 @@
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed, onBeforeUnmount, readonly } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTourStore } from '~/stores/tourStore'
 import { useSpeechRecognition } from './useSpeechRecognition' // Keep for listening
@@ -26,6 +26,8 @@ export function useVoiceNavigation() {
   const isPaused = ref(false)
   // Combined state: true if generating OR playing audio
   const isSpeaking = computed(() => isPlaying.value || isGeneratingAudio.value)
+
+  const isGloballyMuted = ref(false) // Add global mute state
 
   // Function to clean up the audio element and listeners
   const cleanupAudio = () => {
@@ -80,8 +82,25 @@ export function useVoiceNavigation() {
     cleanupAudio() // Clean up on error
   }
 
+  // Function to set global mute state
+  const setGlobalMute = (mute: boolean) => {
+    isGloballyMuted.value = mute
+    console.log(`Global mute set to: ${mute}`)
+    // If currently playing and mute is requested, stop the audio
+    if (mute && isPlaying.value) {
+      stopAudio() 
+    }
+  }
+
   // Core Speak Function using ElevenLabs
   const speak = async (text: string, voiceId?: string) => {
+    // --- Check Global Mute State FIRST ---
+    if (isGloballyMuted.value) {
+      console.log("Speak called but globally muted. Aborting.");
+      return; // Do nothing if muted
+    }
+    // --- End Mute Check ---
+
     if (!text) {
       console.warn("Speak function called with empty text.");
       return;
@@ -182,7 +201,6 @@ export function useVoiceNavigation() {
     transcript: recognitionTranscript,
     interimTranscript,
     recognitionError,
-    commandError,
     startListening: startRecognition, // Rename functions
     stopListening: stopRecognition,
     // executeCommand, // Not directly used here
@@ -240,23 +258,24 @@ export function useVoiceNavigation() {
   // === Return Exposed State and Functions ===
   return {
     // TTS Playback State & Controls
-    isSpeaking, // Combined: true if generating OR playing
-    isGeneratingAudio, // True only during API call
-    isPlaying, // True only when audio is actively playing
-    isPaused, // True only when audio is paused mid-track
-    ttsError, // Any error from TTS generation or playback
+    isSpeaking: readonly(isSpeaking), // Provide read-only computed state
+    isGeneratingAudio: readonly(isGeneratingAudio),
+    isPlaying: readonly(isPlaying),
+    isPaused: readonly(isPaused),      // Ensure isPaused is returned
+    ttsError: readonly(ttsError),
     speak, // Function to generate and play speech
-    pauseAudio, // Function to pause playback
-    resumeAudio, // Function to resume playback
-    stopAudio, // Function to stop playback and cleanup
+    pauseAudio,                       // Ensure pauseAudio is returned
+    resumeAudio,                      // Ensure resumeAudio is returned
+    stopAudio,                        // Expose stop if needed
+    isGloballyMuted: readonly(isGloballyMuted), // Expose mute state as readonly
+    setGlobalMute, // Expose function to control mute
 
     // Speech Recognition State & Controls (Renamed)
-    isListening: isRecognitionListening,
+    isListening: isRecognitionListening, // Use the renamed state
     transcript: recognitionTranscript,
     interimTranscript,
     recognitionError,
-    commandError,
-    startListening: startRecognition,
+    startListening: startRecognition, // Use the renamed function
     stopListening: stopRecognition,
     // userLanguage, // Expose if needed elsewhere
 

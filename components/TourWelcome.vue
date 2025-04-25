@@ -11,6 +11,18 @@
       :initial="{ scale: 0.9, y: 20, opacity: 0 }"
       :enter="{ scale: 1, y: 0, opacity: 1, transition: { type: 'spring', stiffness: 300, damping: 20, delay: 0.1 } }"
     >
+      <!-- Close Button -->
+      <button
+        @click="$emit('close')"
+        class="absolute top-2 left-6 z-10 w-9 h-9 rounded-full bg-black/20 hover:bg-black/30 text-white/80 hover:text-white flex items-center justify-center transition-colors"
+        aria-label="Close"
+        v-motion
+        :initial="{ opacity: 0, scale: 0.5 }"
+        :enter="{ opacity: 1, scale: 1, transition: { delay: 0.5 } }"
+      >
+        <icon name="ph:x" size="18" />
+      </button>
+
       <!-- Mute Button -->
       <button
         @click="toggleMute"
@@ -80,7 +92,7 @@
 import { ref } from 'vue';
 import { Button } from '@/components/ui/button';
 
-const emit = defineEmits(['start', 'toggle-mute']);
+const emit = defineEmits(['start', 'toggle-mute', 'close']);
 
 // Mute state
 const isMuted = ref(false);
