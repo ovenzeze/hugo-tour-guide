@@ -1,222 +1,273 @@
-import { ref, watch, computed, onMounted } from 'vue'
-import { useTourStore, type ExhibitItem } from '~/stores/tourStore'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useSpeechSynthesis } from './useSpeechSynthesis'
-import { useSpeechRecognition } from './useSpeechRecognition'
+import { useTourStore } from '~/stores/tourStore'
+import { useSpeechRecognition } from './useSpeechRecognition' // Keep for listening
+import { useElevenLabsTTS } from './useElevenLabsTTS'
+import elevenLabsConfig, { findVoiceById, getDefaultVoice } from '~/config/elevenlabs'
+import type { Voice } from '~/types/voice'
 
 export function useVoiceNavigation() {
   const tourStore = useTourStore()
-  const { isGuideExplaining } = storeToRefs(tourStore)
-  
-  // --- State --- 
-  const userLanguage = ref('zh-CN') // Default language
-  const commandError = ref<string | null>(null) // Errors during command processing
+  // Import relevant state from tourStore if needed by logic (e.g., currentMuseum for context)
+  const { currentMuseum } = storeToRefs(tourStore)
 
-  // --- Initialize Dependent Composables --- 
+  // === ElevenLabs TTS Integration ===
+  const {
+    audioUrl,
+    // audioData, // Not directly needed here, but available
+    isLoading: isGeneratingAudio, // Renamed for clarity
+    error: ttsError,
+    generateTTS,
+    clearAudio,
+  } = useElevenLabsTTS()
 
-  // Configure Speech Synthesis
-  const synthesisOptions = computed(() => ({
-    lang: userLanguage.value,
-    // Add other synthesis options if needed (rate, pitch, volume)
-  }))
-  const { 
-    speak: synthesisSpeak,
-    trySpeak: synthesisTrySpeak, 
-    isSpeaking: isSynthesisSpeaking, 
-    setLang: setSynthesisLang,
-    // Add other synthesis returns if needed (voices, currentVoice, pause, resume, cancel etc.)
-  } = useSpeechSynthesis(synthesisOptions.value) // Pass reactive options
+  const audioElement = ref<HTMLAudioElement | null>(null)
+  const isPlaying = ref(false)
+  const isPaused = ref(false)
+  // Combined state: true if generating OR playing audio
+  const isSpeaking = computed(() => isPlaying.value || isGeneratingAudio.value)
 
-  // Configure Speech Recognition
-  const recognitionOptions = computed(() => ({
-    lang: userLanguage.value,
-    continuous: false, // Listen for single commands
-    interimResults: false,
-    onError: (event: any) => { // Use 'any' type matching recognition composable
-      console.error('Speech Recognition Error in Navigation:', event.error)
-      commandError.value = `Recognition error: ${event.error}`
+  // Function to clean up the audio element and listeners
+  const cleanupAudio = () => {
+    if (audioElement.value) {
+      console.log("Cleaning up previous audio element...");
+      audioElement.value.pause()
+      audioElement.value.removeEventListener('play', handlePlay)
+      audioElement.value.removeEventListener('pause', handlePause)
+      audioElement.value.removeEventListener('ended', handleEnded)
+      audioElement.value.removeEventListener('error', handleError)
+      // Setting src to empty string is recommended for releasing resources
+      audioElement.value.src = '' 
+      audioElement.value = null
     }
-  }))
-  const { 
-    startListening: recognitionStart, 
-    stopListening: recognitionStop, 
-    isListening: isRecognitionListening, 
-    transcript: recognitionTranscript, 
-    error: recognitionError, 
-    setLang: setRecognitionLang
-    // Add other recognition returns if needed (isSupported, interimTranscript)
-  } = useSpeechRecognition(recognitionOptions.value) // Pass reactive options
-
-
-  // --- Initialization and Language Detection --- 
-  onMounted(() => {
-    // Detect browser language only on client
-    if (typeof window !== 'undefined' && navigator.language) {
-        const detectedLang = navigator.language.startsWith('zh') ? 'zh-CN' : 'en-US'
-        userLanguage.value = detectedLang
-        // No need to call init explicitly, composables handle their init in onMounted
-    }
-  })
-
-  // Sync language changes to underlying composables
-  watch(userLanguage, (newLang) => {
-    setSynthesisLang(newLang)
-    setRecognitionLang(newLang)
-  })
-
-  // --- Core Functions --- 
-
-  // Play welcome message using synthesis composable
-  function playWelcomeIntroduction() {
-    const welcomeMessage = userLanguage.value.startsWith('zh') 
-      ? '欢迎来到大都会博物馆导览。我是您的虚拟导游，您可以询问我任何关于展品或参观路线的问题。'
-      : 'Welcome to the Metropolitan Museum tour! I\'m your virtual guide. Ask me about exhibits or routes.'
-    
-    synthesisTrySpeak(welcomeMessage)
-      .then(() => {
-        // Optional: Add logic after welcome message finishes
-      })
-      .catch(err => {
-        console.error('Error speaking welcome message:', err)
-        commandError.value = 'Could not play welcome message.'
-      })
-    
-    // Still use store state for general guide activity, independent of exact speech timing
-    isGuideExplaining.value = true 
-    setTimeout(() => {
-      isGuideExplaining.value = false
-    }, 10000) // Keep existing timeout logic for guide presence
+    isPlaying.value = false
+    isPaused.value = false
+    // Clear URL/data from the TTS composable as well
+    clearAudio() 
+    console.log("Audio cleanup complete.");
   }
-  
-  // Explain exhibit using synthesis composable
-  function explainExhibit(exhibit: ExhibitItem) {
-    let explanationText = '';
-    
-    if (userLanguage.value.startsWith('zh')) {
-      explanationText = `这是${exhibit.name}。${exhibit.description || '这是我们收藏中的一件精彩展品。'}`;
+
+  // Audio Element Event Handlers
+  const handlePlay = () => {
+    console.log('Audio playback started via event.');
+    isPlaying.value = true
+    isPaused.value = false
+  }
+  const handlePause = () => {
+    // This event fires both on pause() and when the track ends naturally
+    console.log('Audio playback paused via event.');
+    isPlaying.value = false
+    // Only set isPaused if the audio hasn't reached the end
+    if (audioElement.value && audioElement.value.currentTime < audioElement.value.duration) {
+      console.log('Audio explicitly paused.')
+      isPaused.value = true 
     } else {
-      explanationText = `This is ${exhibit.name}. ${exhibit.description || 'This is a fascinating exhibit in our collection.'}`;
+      console.log('Audio pause event at end of track (or element cleared).')
+      isPaused.value = false // Don't mark as paused if it just ended
+      // The 'ended' event handler will perform the main cleanup
     }
+  }
+  const handleEnded = () => {
+    console.log('Audio playback naturally ended via event.');
+    // Ensure states reflect the end before cleanup
+    isPlaying.value = false
+    isPaused.value = false
+    cleanupAudio() // Full cleanup
+  }
+  const handleError = (e: Event | string) => {
+    console.error('Audio playback error event:', e)
+    ttsError.value = 'Error occurred during audio playback.'
+    cleanupAudio() // Clean up on error
+  }
+
+  // Core Speak Function using ElevenLabs
+  const speak = async (text: string, voiceId?: string) => {
+    if (!text) {
+      console.warn("Speak function called with empty text.");
+      return;
+    }
+    console.log(`Requesting TTS synthesis for: "${text.substring(0, 50)}..."`);
+    // --- Stop and Cleanup Previous Audio --- 
+    // Call cleanupAudio FIRST to ensure any existing playback stops
+    // and resources are released before starting a new request.
+    cleanupAudio(); 
+    // --- End Cleanup ---
+
+    const defaultVoice = getDefaultVoice()
+    const targetVoiceId = voiceId || defaultVoice?.id
+
+    if (!targetVoiceId) {
+      const errorMsg = 'No default ElevenLabs voice configured.';
+      ttsError.value = errorMsg
+      console.error(errorMsg)
+      return
+    }
+
+    const voiceConfig = findVoiceById(targetVoiceId)
+    if (!voiceConfig) {
+      const errorMsg = `Configuration for voice ID ${targetVoiceId} not found.`;
+      ttsError.value = errorMsg
+      console.error(errorMsg)
+      return
+    }
+
+    // Prepare options for generateTTS
+    const options: Voice.TTSRequestOptions = {
+      voiceId: targetVoiceId,
+      modelId: voiceConfig.modelId || elevenLabsConfig.models.multilingual, 
+      voiceSettings: { 
+        ...(elevenLabsConfig.defaultSettings || {}), 
+        ...(voiceConfig.settings || {}), 
+      },
+    }
+    // Clean up potential undefined optional settings after merging
+    if (options.voiceSettings?.style === undefined) delete options.voiceSettings.style;
+    if (options.voiceSettings?.use_speaker_boost === undefined) delete options.voiceSettings.use_speaker_boost;
     
-    isGuideExplaining.value = true // Set explaining state before speaking
-    synthesisTrySpeak(explanationText)
-      .then(() => {
-          // Keep the store state management separate from the synthesis promise resolution
-          // isGuideExplaining.value = false; // Or manage based on synthesis state if preferred
+    // Ensure required settings have fallbacks if still missing (shouldn't happen with defaults)
+    options.voiceSettings.stability = options.voiceSettings.stability ?? 0.5; 
+    options.voiceSettings.similarity_boost = options.voiceSettings.similarity_boost ?? 0.75;
+
+    try {
+      // isGeneratingAudio state is managed within useElevenLabsTTS
+      console.log("Calling generateTTS...");
+      await generateTTS(text, options)
+      console.log("generateTTS call completed.");
+
+      // Check for errors *after* await generateTTS completes
+      if (ttsError.value || !audioUrl.value) {
+        console.error('TTS Generation failed or produced no URL:', ttsError.value || 'No audio URL received')
+        // No need to call cleanupAudio here as it was called at the start and error state is set
+        return
+      }
+
+      // Create and setup the audio element for playback
+      console.log('TTS generated successfully. Creating audio element with URL:', audioUrl.value);
+      // Assign to ref immediately
+      audioElement.value = new Audio(audioUrl.value)
+      
+      // Add event listeners BEFORE calling play()
+      audioElement.value.addEventListener('play', handlePlay)
+      audioElement.value.addEventListener('pause', handlePause)
+      audioElement.value.addEventListener('ended', handleEnded)
+      audioElement.value.addEventListener('error', handleError)
+
+      // Attempt to play
+      console.log("Initiating playback...");
+      await audioElement.value.play()
+      // State updates (isPlaying=true) will be handled by the 'play' event listener
+
+    } catch (err: any) {
+      console.error("Catch block: Error occurred during speak function execution:", err)
+      ttsError.value = err.message || 'Failed to generate or play speech.'
+      cleanupAudio() // Ensure cleanup on unexpected errors
+    }
+  }
+
+  // === Speech Recognition (Keep as is, ensure names don't clash) ===
+  const {
+    isListening: isRecognitionListening, // Rename state
+    transcript: recognitionTranscript,
+    interimTranscript,
+    recognitionError,
+    commandError,
+    startListening: startRecognition, // Rename functions
+    stopListening: stopRecognition,
+    // executeCommand, // Not directly used here
+    // supportedCommands,
+    // userLanguage // Not directly used here
+  } = useSpeechRecognition({ lang: 'zh-CN', continuous: false, interimResults: true })
+
+  // 添加音频控制函数
+  const pauseAudio = () => {
+    if (audioElement.value && isPlaying.value) {
+      audioElement.value.pause()
+      // isPaused状态会通过handlePause事件处理器更新
+    }
+  }
+
+  const resumeAudio = () => {
+    if (audioElement.value && isPaused.value) {
+      audioElement.value.play().catch(err => {
+        console.error('Failed to resume audio playback:', err)
+        handleError(err)
       })
-      .catch(err => {
-          console.error(`Error explaining exhibit ${exhibit.name}:`, err)
-          commandError.value = `Could not explain ${exhibit.name}.`
-          isGuideExplaining.value = false; // Ensure state is reset on error
-      });
-      // Let the synthesis `isSpeaking` handle the actual speech end, but keep `isGuideExplaining` for broader context
-  }
-
-  // Simplified speak function using the synthesis composable
-  function speak(text: string) {
-      isGuideExplaining.value = true; // Set explaining state
-      synthesisTrySpeak(text)
-        .catch(err => {
-            console.error('Error during speak function:', err)
-            commandError.value = 'Speech synthesis failed.'
-            isGuideExplaining.value = false; // Reset state on error
-        });
-       // Let isSynthesisSpeaking handle the end of speech
-  }
-
-  // Watch the recognition transcript for commands
-  watch(recognitionTranscript, (newTranscript) => {
-    if (newTranscript && !isRecognitionListening.value) { // Process final transcript when listening stops
-      handleVoiceCommand(newTranscript)
+      // isPlaying状态会通过handlePlay事件处理器更新
     }
+  }
+
+  const stopAudio = () => {
+    cleanupAudio() // 使用现有的cleanupAudio函数完全停止并清理资源
+  }
+
+  // === Logic using new speak/controls ===
+  function playWelcomeIntroduction() {
+    const museumName = currentMuseum.value?.name || 'the museum';
+    const welcomeText = `Hello and welcome to ${museumName}. I am your virtual guide. Feel free to ask me questions about exhibits or request a tour.`;
+    const welcomeVoiceId = elevenLabsConfig.voices.find(v => v.tags?.includes("welcome"))?.id; // Example: find voice by tag
+    speak(welcomeText, welcomeVoiceId); // Use default if no specific welcome voice found
+  }
+
+  function explainExhibit(exhibit: Voice.ExhibitData) {
+    if (!exhibit?.name) {
+      console.warn("explainExhibit called with invalid exhibit data.")
+      return;
+    }
+    const text = `Now looking at ${exhibit.name}. ${exhibit.description || 'No detailed description is available at this time.'}`
+    // Example: potentially use a voice based on exhibit type or museum setting in the future
+    speak(text) // Use default voice for now
+  }
+
+  // === Cleanup ===
+  onBeforeUnmount(() => {
+    console.log("VoiceNavigation composable unmounting. Cleaning up audio and stopping recognition.");
+    cleanupAudio() // Ensure audio stops and resources are released
+    stopRecognition() // Stop speech recognition listener if active
   })
-  
-  // Handle parsed voice commands
-  function handleVoiceCommand(command: string) {
-    console.log(`Processing voice command: ${command}`)
-    commandError.value = null // Clear previous command errors
-    const lowerCommand = command.toLowerCase().trim()
-    
-    if (!lowerCommand) return; // Ignore empty commands
 
-    // --- Command Logic (Simplified example) --- 
-    let response = '';
-    let actionTaken = false;
-
-    // Language-specific command handling
-    if (userLanguage.value.startsWith('zh')) {
-        if (lowerCommand.includes('你好') || lowerCommand.includes('您好')) {
-            response = '您好！我能为您提供什么帮助吗？';
-        } else if (lowerCommand.includes('导游') || lowerCommand.includes('介绍')) {
-            response = '我是您的AI导游。您可以询问我任何关于展品或艺术品的问题。';
-        } else if (lowerCommand.includes('二楼') || lowerCommand.includes('2楼') || (lowerCommand.includes('楼层') && (lowerCommand.includes('二') || lowerCommand.includes('2')))) {
-            response = '正在导航到二楼。这里您可以找到文艺复兴时期的绘画和现代艺术。';
-            tourStore.currentFloor = 2;
-            actionTaken = true;
-        } else if (lowerCommand.includes('一楼') || lowerCommand.includes('1楼') || (lowerCommand.includes('楼层') && (lowerCommand.includes('一') || lowerCommand.includes('1')))) {
-            response = '正在导航到一楼。这里您可以找到埃及收藏品和希腊雕塑。';
-            tourStore.currentFloor = 1;
-            actionTaken = true;
-        } else if (lowerCommand.includes('埃及')) {
-            const egyptExhibit = tourStore.routeItems.find(item => item.name.toLowerCase().includes('egyptian'));
-            if (egyptExhibit) {
-                tourStore.highlightExhibit(egyptExhibit);
-                response = '埃及收藏展示了来自古埃及的文物，包括石棺、木乃伊和象形文字。';
-                actionTaken = true;
-            } else {
-                response = '抱歉，在一楼没有找到埃及展品。';
-            }
-        } else {
-            response = '抱歉，我没有理解您的问题。请尝试用其他方式提问。';
-        }
-    } else { // English commands
-        if (lowerCommand.includes('hello') || lowerCommand.includes('hi')) {
-            response = 'Hello! How can I help you today?';
-        } else if (lowerCommand.includes('guide') || lowerCommand.includes('explain')) {
-            response = 'I am your AI guide. You can ask me about any exhibit or artwork.';
-        } else if (lowerCommand.includes('second floor') || lowerCommand.includes('floor 2') || (lowerCommand.includes('floor') && lowerCommand.includes('2'))) {
-            response = 'Navigating to the second floor. Here you can find Renaissance paintings and Modern Art.';
-            tourStore.currentFloor = 2;
-            actionTaken = true;
-        } else if (lowerCommand.includes('first floor') || lowerCommand.includes('floor 1') || (lowerCommand.includes('floor') && lowerCommand.includes('1'))) {
-            response = 'Navigating to the first floor. Here you can find the Egyptian Collection and Greek Sculptures.';
-            tourStore.currentFloor = 1;
-            actionTaken = true;
-        } else if (lowerCommand.includes('egyptian')) {
-            const egyptExhibit = tourStore.routeItems.find(item => item.name.toLowerCase().includes('egyptian'));
-            if (egyptExhibit) {
-                tourStore.highlightExhibit(egyptExhibit);
-                response = 'The Egyptian Collection features artifacts from ancient Egypt, including sarcophagi, mummies, and hieroglyphic inscriptions.';
-                actionTaken = true;
-            } else {
-                response = 'Sorry, I could not find the Egyptian exhibit on the first floor.';
-            }
-        } else {
-            response = 'I\'m sorry, I didn\'t understand that. Could you please try another question?';
-        }
-    }
-
-    // Speak the response if one was generated
-    if (response) {
-      speak(response)
-    }
-  }
-  
+  // === Return Exposed State and Functions ===
   return {
-    // Core Actions
+    // TTS Playback State & Controls
+    isSpeaking, // Combined: true if generating OR playing
+    isGeneratingAudio, // True only during API call
+    isPlaying, // True only when audio is actively playing
+    isPaused, // True only when audio is paused mid-track
+    ttsError, // Any error from TTS generation or playback
+    speak, // Function to generate and play speech
+    pauseAudio, // Function to pause playback
+    resumeAudio, // Function to resume playback
+    stopAudio, // Function to stop playback and cleanup
+
+    // Speech Recognition State & Controls (Renamed)
+    isListening: isRecognitionListening,
+    transcript: recognitionTranscript,
+    interimTranscript,
+    recognitionError,
+    commandError,
+    startListening: startRecognition,
+    stopListening: stopRecognition,
+    // userLanguage, // Expose if needed elsewhere
+
+    // Functions that trigger speech
     playWelcomeIntroduction,
     explainExhibit,
-    startListening: recognitionStart, // Expose recognition start
-    stopListening: recognitionStop,   // Expose recognition stop
-    handleVoiceCommand,           // Allow manual command input if needed
-    speak,                        // Expose general speak capability
+  }
+}
 
-    // State (Readonly where appropriate)
-    isListening: isRecognitionListening, // Use state from recognition composable
-    isSpeaking: isSynthesisSpeaking,  // Use state from synthesis composable
-    transcript: recognitionTranscript, // Use transcript from recognition composable
-    recognitionError,             // Expose recognition error state
-    commandError,                 // Expose command processing error state
-    userLanguage                  // Expose current language
+// --- Type Augmentation ---
+// Ensure the ExhibitData type used by explainExhibit is defined.
+declare module '~/types/voice' {
+   export interface ExhibitData {
+    id: number | string; // Allow string IDs if applicable
+    name: string;
+    description?: string;
+    // Add other relevant fields if needed by explainExhibit
+  }
+
+  // Type for TTS Request Options passed to generateTTS
+  export interface TTSRequestOptions {
+    voiceId: string;
+    modelId?: string; // Optional, defaults might be handled in TTS composable or config
+    voiceSettings?: Partial<Voice.Settings>; // Allow partial settings override
   }
 }

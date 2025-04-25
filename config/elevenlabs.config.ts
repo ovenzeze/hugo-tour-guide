@@ -46,37 +46,37 @@ export const defaultSettings: Voice.Settings = {
  */
 export const voices: Voice.Config[] = [
   {
-    id: 'voice1',
-    name: '默认女声',
+    id: 'cgSgspJ2msm6clMCkdW9', // Jessica - 有表现力的美国女声
+    name: 'Jessica (博物馆导游)',
     gender: 'female',
     model_id: models.multilingual,
-    preview_url: '/audio/samples/voice1.mp3',
+    preview_url: 'https://storage.googleapis.com/eleven-public-prod/premade/voices/cgSgspJ2msm6clMCkdW9/56a97bf8-b69b-448f-846c-c3a11683d45a.mp3',
     language: 'zh',
-    tags: ['clear', 'professional'],
-    description: '标准女声，清晰专业',
+    tags: ['clear', 'professional', 'guide'],
+    description: '专业博物馆导游，语气亲切清晰',
     settings: { ...defaultSettings },
     is_default: true,
   },
   {
-    id: 'voice2',
-    name: '默认男声',
+    id: 'cjVigY5qzO86Huf0OWal', // Eric - 友好的美国男声
+    name: 'Eric (历史专家)',
     gender: 'male',
     model_id: models.multilingual,
-    preview_url: '/audio/samples/voice2.mp3',
+    preview_url: 'https://storage.googleapis.com/eleven-public-prod/premade/voices/cjVigY5qzO86Huf0OWal/d098fda0-6456-4030-b3d8-63aa048c9070.mp3',
     language: 'zh',
-    tags: ['deep', 'authoritative'],
-    description: '低沉有力的男声',
+    tags: ['friendly', 'authoritative', 'expert'],
+    description: '历史专家，提供深入的展品历史背景介绍',
     settings: { ...defaultSettings },
   },
   {
-    id: 'voice3',
-    name: '英语教学',
+    id: 'EXAVITQu4vr4xnSDxMaL', // Sarah - 柔和的美国女声
+    name: 'Sarah (艺术讲解员)',
     gender: 'female',
     model_id: models.multilingual,
-    preview_url: '/audio/samples/voice3.mp3',
+    preview_url: 'https://storage.googleapis.com/eleven-public-prod/premade/voices/EXAVITQu4vr4xnSDxMaL/01a3e33c-6e99-4ee7-8543-ff2216a32186.mp3',
     language: 'en',
-    tags: ['educational', 'clear'],
-    description: '适合英语教学的标准美式发音',
+    tags: ['soft', 'clear', 'artistic'],
+    description: '艺术展品专业讲解员，擅长艺术作品描述和欣赏指导',
     settings: {
       ...defaultSettings,
       stability: 0.8,
