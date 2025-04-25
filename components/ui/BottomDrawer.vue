@@ -12,7 +12,11 @@
       <div 
         v-if="modelValue" 
         class="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-lg z-50 max-h-[90vh] overflow-auto drawer-container"
-        :class="[fullscreen ? 'min-h-[90vh]' : '', { 'ios-pwa-safe-area': isPwa }]"
+        :class="[
+          fullscreen ? 'min-h-[90vh]' : '', 
+          { 'ios-pwa-safe-area': isPwa },
+          { 'pwa-mode': isPwa }
+        ]"
       >
         <!-- 顶部拖动条 -->
         <div class="flex justify-center py-2">
@@ -83,5 +87,21 @@ const { isPwa } = usePwa()
 /* Default padding when not in PWA mode */
 .drawer-content {
   padding-bottom: 1rem; /* Keep the fallback as default */
+}
+
+/* Additional PWA mode optimizations */
+.pwa-mode {
+  /* Fix for potential SSR layout issues in PWA mode */
+  transform: translateZ(0); /* Force hardware acceleration */
+  will-change: transform; /* Hint for browser optimization */
+  position: fixed; /* Ensure proper positioning in PWA context */
+  backface-visibility: hidden; /* Prevent flickering */
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pwa-mode {
+    /* Ensure proper bottom padding with notches/home indicators */
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
 }
 </style>

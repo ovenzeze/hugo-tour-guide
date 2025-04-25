@@ -17,9 +17,25 @@ export function usePwa() {
       if ('standalone' in window.navigator && typeof window.navigator.standalone === 'boolean') {
         isPwa.value = window.navigator.standalone
       } else if (window.matchMedia) {
-        // Other browsers use the matchMedia API
-        isPwa.value = window.matchMedia('(display-mode: standalone)').matches ||
-                      window.matchMedia('(display-mode: fullscreen)').matches
+        try {
+          // Other browsers use the matchMedia API
+          isPwa.value = window.matchMedia('(display-mode: standalone)').matches ||
+                        window.matchMedia('(display-mode: fullscreen)').matches ||
+                        window.matchMedia('(display-mode: minimal-ui)').matches
+        } catch (e) {
+          console.error('Error checking PWA status:', e)
+        }
+      }
+      
+      // Additional check for PWA manifest
+      if (!isPwa.value && document.head) {
+        // If there's a manifest link and we're not in a browser tab, likely a PWA
+        const hasManifest = !!document.querySelector('link[rel="manifest"]')
+        const isNotBrowserTab = !window.matchMedia('(display-mode: browser)').matches
+        
+        if (hasManifest && isNotBrowserTab) {
+          isPwa.value = true
+        }
       }
     }
   }
@@ -34,9 +50,13 @@ export function usePwa() {
 
     // Add listener for display-mode changes on client-side
     if (typeof window !== 'undefined' && window.matchMedia) {
-      // Check both standalone and fullscreen
-      mediaQuery = window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)')
-      mediaQuery.addEventListener('change', displayModeHandler)
+      try {
+        // Check all PWA display modes
+        mediaQuery = window.matchMedia('(display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui)')
+        mediaQuery.addEventListener('change', displayModeHandler)
+      } catch (e) {
+        console.error('Error setting up PWA display mode listener:', e)
+      }
     }
   })
 

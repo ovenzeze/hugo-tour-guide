@@ -4,9 +4,13 @@
       <div class="py-6 pb-10">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-2xl font-bold text-gray-800">Enhance Your Experience</h2>
-          <!-- <button @click="closePopup" class="text-gray-500 hover:text-gray-700">
+          <button 
+            @click="closePopup" 
+            class="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-colors"
+            aria-label="Close"
+          >
             <Icon name="ph:x" class="w-6 h-6" />
-          </button> -->
+          </button>
         </div>
         
         <p class="text-gray-600 mb-6">
