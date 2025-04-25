@@ -65,13 +65,55 @@
             <p class="text-sm text-gray-700 mb-3">
               Test the notification system.
             </p>
-            <button
-              @click="testNotification"
-              class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition text-sm flex items-center"
-            >
-              <Icon name="ph:bell" class="mr-2 w-4 h-4" />
-              Test Notification
-            </button>
+            <div class="flex flex-wrap gap-2">
+              <button
+                @click="testNotification"
+                class="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition text-sm flex items-center"
+              >
+                <Icon name="ph:bell" class="mr-2 w-4 h-4" />
+                默认通知
+              </button>
+              <button
+                @click="() => toast.success('操作成功', { 
+                  description: '您的内容已经保存',
+                  duration: 4000
+                })"
+                class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm flex items-center"
+              >
+                <Icon name="ph:check-circle" class="mr-2 w-4 h-4" />
+                成功通知
+              </button>
+              <button
+                @click="() => toast.error('操作失败', { 
+                  description: '请检查您的输入并重试',
+                  duration: 4000
+                })"
+                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition text-sm flex items-center"
+              >
+                <Icon name="ph:x-circle" class="mr-2 w-4 h-4" />
+                错误通知
+              </button>
+              <button
+                @click="() => toast.info('信息通知', { 
+                  description: '有新的消息等待查看',
+                  duration: 4000
+                })"
+                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm flex items-center"
+              >
+                <Icon name="ph:info" class="mr-2 w-4 h-4" />
+                信息通知
+              </button>
+              <button
+                @click="() => toast.warning('警告提示', { 
+                  description: '此操作可能导致数据丢失',
+                  duration: 4000
+                })"
+                class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 transition text-sm flex items-center"
+              >
+                <Icon name="ph:warning" class="mr-2 w-4 h-4" />
+                警告通知
+              </button>
+            </div>
           </section>
 
           <!-- ElevenLabs TTS Test Section (Refactored with shadcn-vue) -->
@@ -364,8 +406,8 @@ import { ref, computed, onMounted, watch, reactive, getCurrentInstance } from 'v
 import { useElevenLabsTTS } from '~/composables/useElevenLabsTTS'
 import elevenlabsConfigImport, { getAllVoices, findVoiceById, updateVoicesFromAPI } from '~/config/elevenlabs' // Import config object directly
 import type { Voice } from '~/types/voice'
-// Add missing useNotifications import
-import { useNotifications } from '~/composables/useNotifications'; 
+// Add missing toast import
+import { toast } from 'vue-sonner'
 
 // Shadcn-vue component imports (ensure these are correctly imported/added via CLI)
 // Re-add missing shadcn-vue imports
@@ -588,13 +630,12 @@ const testSpeak = () => {
   voiceNavState.speak('这是语音导航测试。')
 }
 
-const { showNotification } = useNotifications()
 const testNotification = () => {
-  showNotification({
-    title: '测试通知',
-    body: '这是一条测试通知消息。',
-    requireInteraction: true,
-  })
+  console.log('Testing Notification...');
+  toast('默认通知标题', { 
+    description: '这是默认通知的描述文本',
+    duration: 4000
+  });
 }
 
 // --- Environment Info ---
