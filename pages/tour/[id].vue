@@ -100,62 +100,81 @@
       <div v-else class="text-center text-gray-500 py-8">Select an exhibit to see details.</div>
     </BottomDrawer>
 
-    <!-- 悬浮控制按钮组 - 更紧凑的设计 -->
+    <!-- 悬浮控制按钮组 -->
     <div class="fixed bottom-20 right-4 z-30 flex flex-col gap-2">
        <CollapsibleTrigger as-child>
          <Button
            variant="secondary"
            size="icon"
            class="rounded-full bg-white shadow-lg text-blue-500 hover:bg-blue-50"
+           aria-label="Toggle Recommended Route"
          >
            <span class="material-icons">{{ showRoutePanel ? 'format_list_bulleted_off' : 'format_list_bulleted' }}</span>
          </Button>
        </CollapsibleTrigger>
-
-      <Button
-        variant="default"
-        size="icon"
-        class="rounded-full bg-green-500 shadow-lg text-white hover:bg-green-600"
-        @click="startGuidedTour"
-      >
-        <span class="material-icons">play_arrow</span>
-      </Button>
     </div>
 
-    <!-- 导览工具栏 - 简化版本 -->
-    <div class="fixed bottom-[30px] left-0 right-0 h-14 bg-white bg-opacity-90 backdrop-blur-sm shadow-lg z-40">
+    <!-- 导览工具栏 - Updated with Play/Pause -->
+    <div class="fixed bottom-0 left-0 right-0 h-14 bg-white bg-opacity-90 backdrop-blur-sm shadow-lg z-40">
       <div class="flex items-center justify-between px-4 h-full max-w-screen-xl mx-auto">
-        <!-- 导游头像 -->
+        <!-- Guide Info & Playback Controls -->
         <div class="flex items-center space-x-2">
+          <!-- Guide Avatar with Wave -->
           <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center overflow-hidden relative">
             <div class="flex items-center justify-center text-white">
-              <span class="material-icons text-sm">person</span>
+              <span class="material-icons text-sm">{{ isSpeaking ? 'graphic_eq' : 'person' }}</span>
             </div>
-            <!-- 语音波浪动画 -->
-            <div v-if="isSpeaking" class="absolute inset-0 flex items-center justify-center">
-              <div class="voice-wave"></div>
+            <!-- Voice wave animation -->
+            <div v-if="isSpeaking && !isGeneratingAudio" class="absolute inset-0 flex items-center justify-center">
+                <div class="voice-wave"></div>
+            </div>
+             <!-- Loading Indicator -->
+            <div v-if="isGeneratingAudio" class="absolute inset-0 flex items-center justify-center bg-black/30">
+                <Icon name="svg-spinners:180-ring-with-bg" class="w-5 h-5 text-white" />
             </div>
           </div>
-          <div class="text-xs text-gray-700 font-medium">Guide</div>
+          <!-- Play/Pause Button -->
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            @click="togglePlayback" 
+            :disabled="isGeneratingAudio || (!isPlaying && !isPaused)" 
+            class="w-8 h-8 disabled:opacity-50"
+            :aria-label="isPlaying ? 'Pause Guide' : 'Play Guide'">
+            <Icon 
+              :name="isPlaying ? 'material-symbols:pause-outline-rounded' : 'material-symbols:play-arrow-outline-rounded'" 
+              class="w-6 h-6"
+            />
+          </Button>
+           <div class="text-xs text-gray-700 font-medium">Guide</div>
         </div>
 
-        <!-- 状态指示 -->
-        <div v-if="statusText" class="text-center text-xs text-gray-600 flex-1 px-2 truncate">
-          {{ statusText }}
+        <!-- Status Indicator -->
+        <div class="text-center text-xs text-gray-600 flex-1 px-2 truncate">
+           <span v-if="isGeneratingAudio">Generating speech...</span>
+           <span v-else-if="isPlaying">Speaking...</span>
+           <span v-else-if="isPaused">Paused</span>
+           <span v-else-if="ttsError" class="text-red-600">Error: {{ ttsError }}</span>
+           <span v-else>Ready</span>
         </div>
-        <div v-else class="flex-1"></div>
 
-        <!-- 语音询问按钮 -->
-        <button 
-          class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition-colors duration-200"
+        <!-- Voice Input Button (User Listening) -->
+        <Button 
+          variant="default" 
+          size="icon"
+          class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition-colors duration-200 disabled:bg-gray-400"
           @touchstart="startListening"
           @touchend="stopListening"
           @mousedown="startListening"
           @mouseup="stopListening"
           @mouseleave="stopListening"
+          :disabled="isSpeaking" 
         >
-          <span class="material-icons">{{ isListening ? 'mic' : 'mic_none' }}</span>
-        </button>
+          <Icon 
+            :name="isListening ? 'ph:microphone-fill' : 'ph:microphone'" 
+            class="w-5 h-5"
+          />
+        </Button>
       </div>
     </div>
 
@@ -175,6 +194,7 @@ import {
 } from '@/components/ui/collapsible'
 import BottomDrawer from '@/components/ui/BottomDrawer.vue'
 import { Button } from '@/components/ui/button'
+import { Icon } from '#components'
 
 // 获取路由参数
 const route = useRoute()
@@ -190,29 +210,45 @@ const { routeItems, featuredExhibits, currentMuseum } = storeToRefs(tourStore)
 const showRoutePanel = ref(false)
 const showExhibitPanel = ref(false)
 const selectedExhibit = ref<ExhibitItem | null>(null)
-const statusText = ref('')
-const isSpeaking = ref(false)
-const isListening = ref(false)
 
-// 设置当前博物馆
+// Get updated state and functions from useVoiceNavigation
+const {
+  isSpeaking, // Computed: Generating OR Playing
+  isGeneratingAudio,
+  isPlaying,
+  isPaused,
+  ttsError,
+  speak,
+  pauseAudio,
+  resumeAudio,
+  stopAudio, // Use if needed, e.g., on route change or manual stop button
+  isListening, // Renamed state from Speech Recognition
+  startListening, // Renamed function from Speech Recognition
+  stopListening, // Renamed function from Speech Recognition
+  playWelcomeIntroduction,
+  explainExhibit,
+} = useVoiceNavigation()
+
+// Setup current museum on mount
 onMounted(() => {
-  // 加载Material Icons字体
+  // Load Material Icons font (Consider moving to nuxt.config or layout)
   const link = document.createElement('link')
-  link.href = 'https://fonts.googleapis.com/icon?family=Material+Icons'
+  link.href = 'https://fonts.googleapis.com/icon?family=Material+Icons|Material+Symbols+Outlined' // Add Symbols
   link.rel = 'stylesheet'
   document.head.appendChild(link)
   
-  // 尝试设置当前博物馆
   const success = tourStore.setCurrentMuseum(museumId.value)
-  
-  // 如果失败（博物馆ID不存在），重定向到默认博物馆
   if (!success) {
     console.warn(`Museum with ID ${museumId.value} not found, redirecting to default`)
-    router.replace('/tour/metropolitan')
+    router.replace(`/tour/${tourStore.currentMuseumId}`) // Redirect to current default
+  } else {
+      // Play welcome only after museum is successfully set
+      // Consider adding a short delay or trigger on user interaction
+      setTimeout(() => playWelcomeIntroduction(), 500); 
   }
 })
 
-// 动态设置页面标题和元数据
+// Dynamic page head
 useHead(() => ({
   title: currentMuseum.value ? `${currentMuseum.value.name} - Tour Guide` : 'Museum Tour Guide',
   meta: [
@@ -225,38 +261,14 @@ useHead(() => ({
   ]
 }))
 
-// 使用语音导航composable
-const { playWelcomeIntroduction, speak, explainExhibit, isSpeaking: voiceIsSpeaking, isListening: voiceIsListening } = useVoiceNavigation()
-
-// 监听语音状态变化
-watch(voiceIsSpeaking, (newValue) => {
-  isSpeaking.value = newValue
-  if (newValue) {
-    statusText.value = 'Guide is speaking...'
-  } else if (statusText.value === 'Guide is speaking...') {
-    statusText.value = ''
-  }
-})
-
-watch(voiceIsListening, (newValue) => {
-  isListening.value = newValue
-})
-
-// 对话框状态
-const showGuideDialog = ref(false)
-const userMessage = ref('')
-const chatMessages = ref<{ role: 'user' | 'guide', content: string }[]>([
-  { role: 'guide', content: 'Hello! I\'m your virtual guide. How can I help you today?' }
-])
-
 // 地图相关状态
 const currentFloor = ref(1)
-const mapSectionRef = ref<MapSectionComponent | null>(null)
+const mapSectionRef = ref<any>(null) // Use any or define MapSectionComponent type
 
-// 楼层字符串，用于toolbar
+// 楼层字符串
 const currentFloorStr = computed(() => {
-  return currentFloor.value === 0 ? 'G' :
-         currentFloor.value === 1 ? '1' :
+  return currentFloor.value === 0 ? 'G' : 
+         currentFloor.value === 1 ? '1' : 
          currentFloor.value === 2 ? '2-3' : '1'
 })
 
@@ -265,118 +277,54 @@ function updateFloor(floor: number) {
   currentFloor.value = floor
 }
 
-// 定义接口类型
-interface MapSectionComponent {
-  highlightExhibit: (id: number) => void;
-}
-
-// 计算属性：根据当前楼层过滤推荐路线
+// 计算属性：过滤路线项目
 const filteredRouteItems = computed(() => {
   return routeItems.value.filter(item => item.floor === currentFloor.value)
 })
 
-// 处理展品选择
+// 处理展品选择 (地图点击)
 function onExhibitSelected(exhibit: ExhibitItem) {
   selectedExhibit.value = exhibit
   showExhibitPanel.value = true
   
-  // 当展品被选中时，触发语音解释
+  // Explain the exhibit using the new speak function
   explainExhibit(exhibit)
 }
 
-// 添加一个函数用于在用户首次交互后播放欢迎介绍
-function playWelcomeOnInteraction() {
-  if (currentMuseum.value) {
-    speak(`Welcome to ${currentMuseum.value.name}. I'll be your guide today.`)
-  } else {
-    playWelcomeIntroduction()
-  }
-}
-
-// 确保在组件销毁时清理资源
-onBeforeUnmount(() => {
-  // 清理可能的语音合成
-  if (window.speechSynthesis) {
-    window.speechSynthesis.cancel()
-  }
-})
-
 // 导航方法
 function goBack() {
+  stopAudio() // Stop any speech before navigating back
   router.back()
 }
 
-// 开始导览
-function startGuidedTour() {
-  statusText.value = 'Starting guided tour...'
-  
-  // 在用户交互时尝试播放欢迎介绍
-  playWelcomeOnInteraction()
-  
-  // 打开路线面板
-  showRoutePanel.value = true
-  
-  // 重置可能的高亮状态
-  routeItems.value.forEach(item => item.highlight = false)
-
-  // 高亮第一个项目
-  if (filteredRouteItems.value.length > 0) {
-    highlightExhibit(filteredRouteItems.value[0])
-
-    // 播放介绍
-    if (currentMuseum.value) {
-      speak(`Let's start our tour of the ${currentMuseum.value.name}. I'll guide you through the highlights of the collection.`)
-    } else {
-      speak('Let\'s start our tour. I\'ll guide you through the highlights of the collection.')
-    }
-  }
-  
-  // 5秒后清除状态文本
-  setTimeout(() => {
-    if (statusText.value === 'Starting guided tour...') {
-      statusText.value = ''
-    }
-  }, 5000)
-}
-
-// 语音识别相关方法
-function startListening() {
-  isListening.value = true
-  statusText.value = 'Listening...'
-}
-
-function stopListening() {
-  if (!isListening.value) return
-  
-  isListening.value = false
-  openGuideDialog()
-  statusText.value = ''
-}
-
-// 处理Guide对话框交互
-function openGuideDialog() {
-  showGuideDialog.value = true
-  // 在用户交互时尝试播放欢迎介绍
-  playWelcomeOnInteraction()
-}
-
-// 高亮展品
+// 高亮展品 (路线列表点击)
 function highlightExhibit(item: ExhibitItem) {
-  // 使用store中的高亮方法
-  tourStore.highlightExhibit(item)
-
-  // 切换到展品所在的楼层
+  tourStore.highlightExhibit(item) // Use store's highlight method
   currentFloor.value = item.floor
-
-  // 调用地图组件的方法来高亮显示展品位置
-  if (mapSectionRef.value) {
+  if (mapSectionRef.value?.highlightExhibit) {
     mapSectionRef.value.highlightExhibit(item.id)
   }
-  
-  // 显示展品详情
   selectedExhibit.value = item
   showExhibitPanel.value = true
+  // Explain exhibit when highlighted from the list as well
+  explainExhibit(item) 
 }
+
+// Toggle Play/Pause for guide speech
+function togglePlayback() {
+  if (isPlaying.value) {
+    pauseAudio()
+  } else if (isPaused.value) {
+    resumeAudio()
+  }
+  // If neither playing nor paused, do nothing (wait for speak to be called)
+}
+
+// Component unmount cleanup (additional cleanup in composable)
+onBeforeUnmount(() => {
+   stopAudio() // Ensure audio stops if component is destroyed
+})
+
 </script>
 
 <style scoped>
@@ -389,7 +337,7 @@ function highlightExhibit(item: ExhibitItem) {
   display: none; /* Chrome, Safari, Opera */
 }
 
-/* 语音波浪动画 */
+/* Voice wave animation */
 .voice-wave {
   width: 20px;
   height: 20px;

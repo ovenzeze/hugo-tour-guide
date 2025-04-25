@@ -212,8 +212,9 @@ function sendTranscript() {
   // Send transcript to parent component
   emit('send', finalTranscript.value)
   
-  // Clear current transcript
-  finalTranscript.value = ''
+  // Clear current transcript - Removed as finalTranscript is readonly
+  // finalTranscript.value = '' // TS2540 Error
+  // The transcript will be cleared automatically when startListening is called next time
 }
 
 // Update speech rate

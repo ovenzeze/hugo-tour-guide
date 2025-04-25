@@ -72,7 +72,16 @@ export namespace Voice {
    * 使用场景类型
    */
   export type ScenarioType = 'quality' | 'balanced' | 'realtime';
+
+  /**
+   * 展品数据接口
+   */
+  export interface ExhibitData {
+    id: number | string; // 根据实际情况可能需要 ID
+    name: string;
+    description?: string;
+  }
 }
 
-// 默认导出整个命名空间
-export default Voice; 
+// 导出整个命名空间（作为类型），供其他模块使用
+export type { Voice }; 

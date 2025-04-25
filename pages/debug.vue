@@ -3,7 +3,6 @@
        v-motion
        :initial="{ opacity: 0 }"
        :enter="{ opacity: 1, transition: { duration: 300 } }">
-    <h1 class="text-2xl font-bold mb-6 border-b pb-2">Debug Information</h1>
 
     <!-- Debug Tools Section -->
     <div class="mb-6">
@@ -16,7 +15,7 @@
       </button>
       
       <Transition name="slide">
-        <div v-show="toggleTools" class="space-y-4 p-4 border rounded-lg">
+        <div v-show="toggleTools" class="space-y-4 p-4  rounded-lg">
           <!-- Safari Guide Popup Debug -->
           <section class="p-4 border border-amber-300 bg-amber-50 rounded-lg">
             <h2 class="text-lg font-semibold mb-2 text-amber-800">Safari Guide Popup</h2>
@@ -140,7 +139,6 @@
             <pre>Mode: {{ runtimeConfig.public.NODE_ENV || 'N/A' }}</pre>
             <pre>SSR: {{ isSSR ? 'Enabled' : 'Disabled' }}</pre>
             <pre>PWA Mode: {{ isPwa ? 'Yes' : 'No' }}</pre>
-            <pre>User Language: {{ userLanguage }}</pre>
           </div>
         </div>
       </Transition>
@@ -178,11 +176,10 @@
       <Transition name="slide">
         <div v-show="toggleVoice" class="p-4 border rounded-lg">
           <div class="bg-gray-50 p-4 rounded-lg text-sm border">
-            <pre>Listening: {{ voiceNavState.isListening.value }}</pre>
-            <pre>Speaking: {{ voiceNavState.isSpeaking.value }}</pre>
-            <pre>Transcript: {{ voiceNavState.transcript.value || 'N/A' }}</pre>
-            <pre>Recognition Error: {{ voiceNavState.recognitionError.value || 'N/A' }}</pre>
-            <pre>Command Error: {{ voiceNavState.commandError.value || 'N/A' }}</pre>
+            <pre>Listening: {{ voiceNavState?.isListening?.value }}</pre>
+            <pre>Speaking: {{ voiceNavState?.isSpeaking?.value }}</pre>
+            <pre>Transcript: {{ voiceNavState?.transcript?.value || 'N/A' }}</pre>
+            <pre>Recognition Error: {{ voiceNavState?.recognitionError?.value || 'N/A' }}</pre>
           </div>
         </div>
       </Transition>
@@ -229,13 +226,12 @@ const toggleStore = ref(false)
 const toggleVoice = ref(false)
 
 // 获取所有可用的声音配置
-const voices = computed(() => getAllVoices())
+// const voices = computed(() => getAllVoices())
 
 const runtimeConfig = useRuntimeConfig()
 const tourStore = useTourStore()
 const voiceNavState = useVoiceNavigation()
 const { isPwa } = usePwa()
-const { userLanguage } = useVoiceNavigation()
 
 // Check if running on server or client
 const isSSR = computed(() => process.server)
@@ -247,8 +243,11 @@ const tourStoreState = computed(() => tourStore.$state)
 
 // --- Existing Debug Tools Methods ---
 const resetGuidePopup = () => {
-  localStorage.removeItem('safariAddToHomeScreenDismissed')
-  alert('Safari Guide Popup has been reset. Refresh the page on Safari.')
+  localStorage.removeItem('hasShownGuidePopup')
+  toast.success('Safari Guide Popup Reset', { 
+      description: 'The flag has been cleared. Refresh Safari to see the prompt again.',
+      duration: 4000
+  });
 }
 
 const store = useTourStore()

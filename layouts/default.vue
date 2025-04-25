@@ -1,25 +1,23 @@
 <template>
-  <div class="h-dvh max-h-dvh flex flex-col relative" :class="{ 'ios-pwa-safe-area': isPwa, 'ios-header-safe-area': isPwa }">
+  <div class="h-dvh max-h-dvh flex flex-col relative bg-background" :class="{ 'ios-pwa-safe-area': isPwa, 'ios-header-safe-area': isPwa }">
     <ClientOnly>
-      <!-- <div class="header-wrapper"> -->
+      <div class="header-wrapper">
         <DynamicAppHeader />
-      <!-- </div> -->
+      </div>
       <GuidePopup />
     </ClientOnly>
     
-    <!-- 主要内容区 -->
-    <main class="flex-1 overflow-hidden overscroll-none pb-[calc(64px+1rem)] md:pb-4">
+    <main class="flex-1 overflow-hidden overscroll-none md:pb-4 pb-20" :class="{ 'pb-32': isPwa }">
       <div class="container mx-auto px-4 h-full overflow-scroll">
         <slot />
       </div>
     </main>
     
-    <!-- 移动端底部导航 - 添加安全区域支持 -->
     <nav
-      class="fixed bottom-0 left-0 right-0 border-t shadow-lg z-50 bg-background border-t-border bottom-nav"
+      class="fixed bottom-[env(safe-area-inset-bottom)] left-0 right-0 border-t z-50 bg-background border-t-border box-border"
       :style="{
-        paddingTop: '0.5rem'
-        // paddingBottom is now handled by CSS below
+        paddingTop: '0.5rem',
+        paddingBottom: '0.5rem'
       }"
     >
       <ul class="flex justify-around h-full items-center">
@@ -62,22 +60,15 @@ const bottomNavLinks = computed(() => {
 </script>
 
 <style scoped>
-/* Apply bottom safe area padding only when in iOS PWA mode */
 .ios-pwa-safe-area .bottom-nav {
   padding-bottom: calc(0.5rem + env(safe-area-inset-bottom) * 0.5);
 }
 
-/* Default padding when not in PWA mode or on other devices */
-/* .bottom-nav {
-   padding-bottom: 0.5rem; /* Default padding */
-/* } */
 
-/* Top safe area for header in iOS PWA mode */
 .ios-header-safe-area {
-  padding-top: env(safe-area-inset-top, 0);
+  padding-top: env(safe-area-inset-top);
 }
 
-/* Header wrapper to properly position the header */
 .header-wrapper {
   position: sticky;
   top: 0;
@@ -85,5 +76,4 @@ const bottomNavLinks = computed(() => {
   width: 100%;
 }
 
-/* Add any other specific styles here */
 </style>
