@@ -112,26 +112,38 @@ export function useVoiceNavigation() {
     }
 
     // Prepare options for generateTTS
-    const options: Voice.TTSRequestOptions = {
+    const options: Voice.TTSOptions = {
       voiceId: targetVoiceId,
       modelId: voiceConfig.modelId || elevenLabsConfig.models.multilingual, 
-      voiceSettings: { 
-        ...(elevenLabsConfig.defaultSettings || {}), 
-        ...(voiceConfig.settings || {}), 
+      voiceSettings: { // Initialize with default/merged settings
+        ...(elevenLabsConfig.defaultSettings || {}),
+        ...(voiceConfig.settings || {}),
       },
     }
     // Clean up potential undefined optional settings after merging
-    if (options.voiceSettings?.style === undefined) delete options.voiceSettings.style;
-    if (options.voiceSettings?.use_speaker_boost === undefined) delete options.voiceSettings.use_speaker_boost;
-    
-    // Ensure required settings have fallbacks if still missing (shouldn't happen with defaults)
-    options.voiceSettings.stability = options.voiceSettings.stability ?? 0.5; 
-    options.voiceSettings.similarity_boost = options.voiceSettings.similarity_boost ?? 0.75;
+    // Add checks before accessing/deleting properties
+    if (options.voiceSettings) { 
+        if (options.voiceSettings.style === undefined) delete options.voiceSettings.style;
+        if (options.voiceSettings.use_speaker_boost === undefined) delete options.voiceSettings.use_speaker_boost;
+        
+        // Ensure required settings have fallbacks if still missing
+        options.voiceSettings.stability = options.voiceSettings.stability ?? 0.5; 
+        options.voiceSettings.similarity_boost = options.voiceSettings.similarity_boost ?? 0.75;
+    }
 
     try {
       // isGeneratingAudio state is managed within useElevenLabsTTS
       console.log("Calling generateTTS...");
-      await generateTTS(text, options)
+      // Pass options, ensuring voiceSettings matches TTSOptions definition if not undefined
+      await generateTTS(text, {
+          ...options,
+          voiceSettings: options.voiceSettings ? {
+              stability: options.voiceSettings.stability, // Already ensured to be number
+              similarity_boost: options.voiceSettings.similarity_boost, // Already ensured to be number
+              style: options.voiceSettings.style, // Keep optional
+              use_speaker_boost: options.voiceSettings.use_speaker_boost // Keep optional
+          } : undefined
+      })
       console.log("generateTTS call completed.");
 
       // Check for errors *after* await generateTTS completes

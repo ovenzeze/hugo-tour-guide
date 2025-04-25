@@ -27,7 +27,11 @@ export function useElevenLabsTTS() {
     return generateTTS(text, {
       voiceId: voiceConfig.id,
       modelId: voiceConfig.modelId,
-      voiceSettings: voiceConfig.settings
+      voiceSettings: voiceConfig.settings ? {
+        ...voiceConfig.settings,
+        stability: voiceConfig.settings.stability ?? 0.5,
+        similarity_boost: voiceConfig.settings.similarity_boost ?? 0.75
+      } : undefined
     })
   }
   

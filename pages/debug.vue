@@ -140,7 +140,6 @@
             <pre>Mode: {{ runtimeConfig.public.NODE_ENV || 'N/A' }}</pre>
             <pre>SSR: {{ isSSR ? 'Enabled' : 'Disabled' }}</pre>
             <pre>PWA Mode: {{ isPwa ? 'Yes' : 'No' }}</pre>
-            <pre>User Language: {{ userLanguage }}</pre>
           </div>
         </div>
       </Transition>
@@ -229,13 +228,12 @@ const toggleStore = ref(false)
 const toggleVoice = ref(false)
 
 // 获取所有可用的声音配置
-const voices = computed(() => getAllVoices())
+// const voices = computed(() => getAllVoices())
 
 const runtimeConfig = useRuntimeConfig()
 const tourStore = useTourStore()
 const voiceNavState = useVoiceNavigation()
 const { isPwa } = usePwa()
-const { userLanguage } = useVoiceNavigation()
 
 // Check if running on server or client
 const isSSR = computed(() => process.server)

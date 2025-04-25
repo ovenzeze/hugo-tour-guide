@@ -1,6 +1,7 @@
 import { defineNuxtRouteMiddleware, navigateTo } from '#app'
+import type { RouteLocationNormalized } from 'vue-router'
 
-export default defineNuxtRouteMiddleware((to, from) => {
+export default defineNuxtRouteMiddleware((to: RouteLocationNormalized, from: RouteLocationNormalized) => {
   // This is a placeholder for authentication middleware
   // In a real implementation, this would check if the user is authenticated
   

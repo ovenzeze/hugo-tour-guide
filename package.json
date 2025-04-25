@@ -9,14 +9,12 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "lint": "tsc --noEmit"
+    "lint": "nuxi typecheck"
   },
   "dependencies": {
     "@iconify-json/ph": "^1.2.2",
-    "@nuxt/content": "^3.4.0",
     "@nuxt/icon": "^1.12.0",
     "@nuxtjs/google-fonts": "^3.2.0",
-    "@nuxtjs/leaflet": "^1.2.6",
     "@nuxtjs/mdc": "^0.16.1",
     "@pinia/nuxt": "^0.11.0",
     "@tailwindcss/vite": "^4.1.4",
@@ -26,7 +24,6 @@
     "@vueuse/nuxt": "^13.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "leaflet-indoor": "^1.0.3",
     "lucide-vue-next": "^0.488.0",
     "pg": "^8.14.1",
     "phosphor-vue": "^1.4.2",
@@ -48,8 +45,10 @@
     "@types/geojson": "^7946.0.16",
     "@types/leaflet": "^1.9.17",
     "@vite-pwa/nuxt": "^1.0.0",
+    "h3": "^1.15.1",
     "nuxt": "^3.16.2",
     "sharp": "^0.34.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vue-tsc": "^2.2.10"
   }
 }

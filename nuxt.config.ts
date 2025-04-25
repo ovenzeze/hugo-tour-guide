@@ -46,8 +46,8 @@ export default defineNuxtConfig({
     '@nuxtjs/google-fonts',
     '@pinia/nuxt',
     '@nuxt/icon',
+    'shadcn-nuxt',
     '@vite-pwa/nuxt',
-    '@nuxtjs/leaflet',
     '@nuxtjs/mdc',
   ],
 
@@ -89,6 +89,7 @@ export default defineNuxtConfig({
     }
   },
   plugins: [],
+  // @ts-ignore - Ignore TS error as shadcn-nuxt module should handle this config key
   shadcn: {
     prefix: '',
     componentDir: './components/ui'

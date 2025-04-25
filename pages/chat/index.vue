@@ -238,6 +238,16 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
+// Define interface for debug info
+interface LastResponseInfo {
+  ok: boolean;
+  status?: number;
+  error?: string;
+  message?: string;
+  stack?: string;
+  timestamp: string;
+}
+
 // Define page meta for title
 definePageMeta({
   title: 'TTS Tool'
@@ -269,7 +279,7 @@ const ttsSettings = ref({
 
 // Debugging state
 const lastRequestPayload = ref<object | null>(null)
-const lastResponseInfo = ref<object | null>(null) // Store response status/error details
+const lastResponseInfo = ref<LastResponseInfo | null>(null) // Apply the interface
 
 // Get component instance uid for unique IDs
 const instance = getCurrentInstance()
@@ -342,15 +352,20 @@ const handleElevenLabsGenerate = async () => {
   }
 
   // Prepare options, overriding defaults with UI settings
-  const options = {
-    voiceId: selectedVoiceId.value,
-    modelId: selectedModelId.value || voiceConfig.modelId || elevenLabsConfig.models.multilingual,
-    voiceSettings: {
+  // Ensure voiceSettings matches the stricter type expected by generateTTS
+  const finalVoiceSettings = {
       stability: ttsSettings.value.stability ?? elevenLabsConfig.defaultSettings.stability,
       similarity_boost: ttsSettings.value.similarity_boost ?? elevenLabsConfig.defaultSettings.similarity_boost,
-      ...(isStyleSupported.value && (ttsSettings.value.style ?? 0) > 0 && { style: ttsSettings.value.style }),
       use_speaker_boost: ttsSettings.value.use_speaker_boost ?? true,
-    },
+      // Conditionally add style only if supported and has a value > 0
+      ...(isStyleSupported.value && (ttsSettings.value.style ?? 0) > 0 && { style: ttsSettings.value.style ?? 0 })
+  };
+
+  // Prepare options for generateTTS, directly using the structure expected by TTSOptions
+  const options: Voice.TTSOptions = {
+    voiceId: selectedVoiceId.value,
+    modelId: selectedModelId.value || voiceConfig.modelId || elevenLabsConfig.models.multilingual,
+    voiceSettings: finalVoiceSettings // Pass the constructed settings
   };
 
   // Store request payload for debugging
