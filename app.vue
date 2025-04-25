@@ -2,9 +2,19 @@
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
+  <Toaster 
+    position="top-right" 
+    closeButton 
+    richColors
+    :toastOptions="{
+      duration: 4000
+    }"
+  />
 </template>
 
 <script setup lang="ts">
+import { Toaster } from '@/components/ui/sonner'
+
 useHead({
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover' },
