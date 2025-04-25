@@ -1,15 +1,7 @@
 <template>
   <!-- Fullscreen layout container: Takes full viewport height and width, adding safe area padding -->
   <div
-    class="overflow-hidden"
-    :style="{
-      paddingTop: 'env(safe-area-inset-top)',
-      paddingBottom: 'env(safe-area-inset-bottom)',
-      paddingLeft: 'env(safe-area-inset-left)',
-      paddingRight: 'env(safe-area-inset-right)',
-      height: '100dvh', /* Ensure height calculation respects padding */
-      width: '100vw'    /* Ensure width calculation respects padding */
-    }"
+    class="h-dvh max-h-dvh w-full relative overflow-hidden fullscreen-container" :class="{ 'ios-pwa-safe-area': isPwa, 'ios-header-safe-area': isPwa && !isTour }"
   >
     <!-- NuxtPage will be injected here, allowing the page content
          to control its own layout and scrolling within the safe area -->
@@ -19,12 +11,18 @@
 
 <script setup lang="ts">
 // No specific script logic needed for this simple layout
+const { isPwa } = usePwa()
+const isTour = useRoute().path.includes('tour')
 </script>
 
 <style scoped>
 /* Removed specific styles as inline styles are now handling dimensions and padding */
 /* Add any additional fullscreen-specific styles below if needed */
-.overflow-hidden {
-  overflow: hidden; /* Keep preventing scrollbars on the layout itself */
+
+.ios-header-safe-area {
+  padding-top: calc(env(safe-area-inset-top, 0) + 1rem);
+}
+.ios-footer-safe-area {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0) + 1rem);
 }
 </style> 

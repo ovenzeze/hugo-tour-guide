@@ -9,11 +9,15 @@
     :toastOptions="{
       duration: 4000
     }"
+    class="toaster-safe-area"
   />
 </template>
 
 <script setup lang="ts">
 import { Toaster } from '@/components/ui/sonner'
+import { usePwa } from '~/composables/usePwa'
+
+const { isPwa } = usePwa()
 
 useHead({
   meta: [
@@ -133,5 +137,12 @@ input[type="number"]::-webkit-outer-spin-button {
     transform: none;
     filter: none;
   }
+}
+
+/* 为Toaster添加安全区域支持 */
+.toaster-safe-area {
+  --offset: env(safe-area-inset-top, 20px);
+  margin-top: var(--offset);
+  padding-right: env(safe-area-inset-right, 16px);
 }
 </style>

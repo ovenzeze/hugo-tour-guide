@@ -1,8 +1,10 @@
 <template>
-  <div class="h-dvh max-h-dvh flex flex-col relative">
+  <div class="h-dvh max-h-dvh flex flex-col relative" :class="{ 'ios-pwa-safe-area': isPwa, 'ios-header-safe-area': isPwa }">
     <ClientOnly>
-      <DynamicAppHeader />
-    <GuidePopup />
+      <!-- <div class="header-wrapper"> -->
+        <DynamicAppHeader />
+      <!-- </div> -->
+      <GuidePopup />
     </ClientOnly>
     
     <!-- 主要内容区 -->
@@ -14,12 +16,11 @@
     
     <!-- 移动端底部导航 - 添加安全区域支持 -->
     <nav
-      class="fixed bottom-0 left-0 right-0 border-t shadow-lg z-50 bg-background border-t-border"
+      class="fixed bottom-0 left-0 right-0 border-t shadow-lg z-50 bg-background border-t-border bottom-nav"
       :style="{
-        paddingTop: '0.5rem',
-        paddingBottom: `calc(0.5rem + env(safe-area-inset-bottom) * 0.5)`,
+        paddingTop: '0.5rem'
+        // paddingBottom is now handled by CSS below
       }"
-      :class="{ 'pwa-mode': isPwa }"
     >
       <ul class="flex justify-around h-full items-center">
         <li v-for="link in bottomNavLinks" :key="link.path" class="flex-1 h-full ">
@@ -41,6 +42,7 @@
 import { computed } from 'vue'
 import GuidePopup from '../components/layout/GuidePopup.vue'
 import DynamicAppHeader from '../components/layout/DynamicAppHeader.vue'
+import { usePwa } from '~/composables/usePwa'
 
 const { isPwa } = usePwa()
 
@@ -58,3 +60,30 @@ const bottomNavLinks = computed(() => {
   )
 })
 </script>
+
+<style scoped>
+/* Apply bottom safe area padding only when in iOS PWA mode */
+.ios-pwa-safe-area .bottom-nav {
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom) * 0.5);
+}
+
+/* Default padding when not in PWA mode or on other devices */
+/* .bottom-nav {
+   padding-bottom: 0.5rem; /* Default padding */
+/* } */
+
+/* Top safe area for header in iOS PWA mode */
+.ios-header-safe-area {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+/* Header wrapper to properly position the header */
+.header-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+}
+
+/* Add any other specific styles here */
+</style>

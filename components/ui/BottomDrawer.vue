@@ -11,8 +11,8 @@
     <Transition name="drawer">
       <div 
         v-if="modelValue" 
-        class="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-lg z-50 max-h-[90vh] overflow-auto"
-        :class="[fullscreen ? 'min-h-[90vh]' : '']"
+        class="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-lg z-50 max-h-[90vh] overflow-auto drawer-container"
+        :class="[fullscreen ? 'min-h-[90vh]' : '', { 'ios-pwa-safe-area': isPwa }]"
       >
         <!-- 顶部拖动条 -->
         <div class="flex justify-center py-2">
@@ -20,7 +20,7 @@
         </div>
         
         <!-- 内容区域 -->
-        <div class="px-4 pb-safe">
+        <div class="px-4 drawer-content">
           <slot></slot>
         </div>
       </div>
@@ -29,6 +29,8 @@
 </template>
 
 <script setup lang="ts">
+import { usePwa } from '~/composables/usePwa'
+
 defineProps({
   modelValue: {
     type: Boolean,
@@ -41,6 +43,8 @@ defineProps({
 })
 
 defineEmits(['update:modelValue'])
+
+const { isPwa } = usePwa()
 </script>
 
 <style>
@@ -71,7 +75,13 @@ defineEmits(['update:modelValue'])
   transform: translateY(100%);
 }
 
-.pb-safe {
+/* Apply bottom safe area padding only when in iOS PWA mode */
+.ios-pwa-safe-area .drawer-content {
   padding-bottom: env(safe-area-inset-bottom, 1rem);
+}
+
+/* Default padding when not in PWA mode */
+.drawer-content {
+  padding-bottom: 1rem; /* Keep the fallback as default */
 }
 </style>
