@@ -78,7 +78,7 @@
 import { ref, onMounted } from 'vue'
 import { useMotion } from '@vueuse/motion'
 import type { MotionVariants } from '@vueuse/motion'
-import BottomDrawer from '../ui/BottomDrawer.vue'
+import BottomDrawer from '~/components/ui/bottom-drawer'
 
 const showPopup = ref(false)
 

@@ -76,57 +76,21 @@ useHead({
 /* for global page transition */
 .page-enter-active,
 .page-leave-active {
-  transition: all 0.4s;
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
 }
 
-.page-enter-from,
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
 .page-leave-to {
   opacity: 0;
-  filter: blur(1rem);
-}
-
-.noscrollbar::-webkit-scrollbar {
-  width: 0.125rem;
-  height: 0.125rem;
-}
-
-.hidescrollbar::-webkit-scrollbar {
-  width: 0.125rem;
-  height: 0.125rem;
-}
-
-.noscrollbar::-webkit-scrollbar-track {
-  border-radius: 9999px;
-  background-color: #f3f4f6;
-}
-
-.noscrollbar::-webkit-scrollbar-thumb {
-  border-radius: 9999px;
-  background-color: #f3f4f6;
-}
-
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* 添加全局过渡动画 */
-.page-enter-active,
-.page-leave-active {
-  transition: all 0.4s ease-in-out;
-}
-
-.page-enter-from,
-.page-leave-to {
-  opacity: 0;
-  filter: blur(0.5rem);
-  transform: translateY(5px);
+  transform: translateY(-10px);
 }
 
 /* 可选:为不同设备优化动画 */
 @media (prefers-reduced-motion: reduce) {
-
   .page-enter-active,
   .page-leave-active {
     transition: opacity 0.3s ease-in-out;

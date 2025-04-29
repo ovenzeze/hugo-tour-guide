@@ -192,7 +192,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import BottomDrawer from '@/components/ui/BottomDrawer.vue'
+import BottomDrawer from '~/components/ui/bottom-drawer'
 import { Button } from '@/components/ui/button'
 import { Icon } from '#components'
 

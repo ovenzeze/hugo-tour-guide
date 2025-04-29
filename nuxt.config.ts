@@ -14,7 +14,7 @@ export default defineNuxtConfig({
       elevenlabsDefaultModelId: process.env.ELEVENLABS_DEFAULT_MODEL_ID || 'eleven_multilingual_v2'
     }
   },
-  devtools: { enabled: false },
+  devtools: { enabled: true },
   css: ['~/assets/css/tailwind.css'],
 
 
@@ -49,8 +49,12 @@ export default defineNuxtConfig({
     'shadcn-nuxt',
     '@vite-pwa/nuxt',
     '@nuxtjs/mdc',
+    '@nuxtjs/supabase'
   ],
 
+  supabase: {
+    redirect: false,
+  },
 
   mdc: {
     highlight: {
@@ -86,6 +90,10 @@ export default defineNuxtConfig({
         { rel: 'manifest', href: '/manifest.json' },
         { rel: 'mask-icon', href: '/images/icons/favicons/safari-pinned-tab.svg', color: '#5bbad5' }
       ]
+    },
+    layoutTransition: {
+      name: 'page',
+      mode: 'out-in'
     }
   },
   plugins: [],
@@ -146,6 +154,12 @@ export default defineNuxtConfig({
       navigateFallback: '/',
       navigateFallbackAllowlist: [/.*\/$/],
       type: 'module'
+    },
+    redirectOptions: {
+      login: false,
+      exclude: ['/**'],
+      include: [],
+      saveRedirectToCookie: false,
     },
   }
 })
