@@ -49,12 +49,14 @@ const navLinks = [
   { path: '/guide', label: 'Guide', icon: 'ph:book-open' },
   { path: '/tour', label: 'Tour', icon: 'ph:map-trifold' },
   { path: '/chat', label: 'Chat', icon: 'ph:chat-circle' },
+  { path: '/docs', label: 'Docs', icon: 'ph:file-text' },
   { path: '/debug', label: 'Debug', icon: 'ph:gear' }
 ]
 
 const bottomNavLinks = computed(() => {
-  return navLinks.filter(link => 
-    link.path !== '/' // 首页已在logo中体现
+  // 显示 Guide、Tour、Chat、Docs、Debug 五个底部Tab（不含 Home）
+  return navLinks.filter(link =>
+    link.path !== '/'
   )
 })
 </script>

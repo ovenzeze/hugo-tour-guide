@@ -1,25 +1,11 @@
-<div align="center">
-<!-- <img src="https://hugo.isclay.com/images/icons/favicons/favicon-32x32.png" alt="Hugo Tour Guide" width=""/> -->
-<h1>Audio Generation and Upload API Guide</h1>
-
-<div align="center">
-Author: Zhen@Hugo<br>
-Last Updated: 2024-05-02
-</div>
-</div>
-
-## Table of Contents
-
-- [Overview](#overview)
-- [API Endpoints](#api-endpoints)
-  - [Generate Audio](#generate-audio)
-  - [Ingest Audio](#ingest-audio)
-- [Database Relations](#database-relations)
-- [Use Cases](#use-cases)
-- [Best Practices](#best-practices)
-- [Troubleshooting](#troubleshooting)
-- [Code Examples](#code-examples)
-
+---
+title: Audio Generation and Upload API Guide
+description: Complete guide for using the audio generation and upload APIs in Hugo Tour Guide
+author: Zhen@Hugo
+date: 2024-05-02
+updatedAt: 2024-05-15
+tags: ["api", "audio", "elevenlabs", "guide"]
+---
 ## Overview
 
 Hugo Tour Guide system provides two main API endpoints for generating and managing museum tour audio:

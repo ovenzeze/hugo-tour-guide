@@ -33,6 +33,11 @@ export default defineNuxtConfig({
     ],
     server: {
       allowedHosts: true
+    },
+    resolve: {
+      alias: {
+        '#content': './.nuxt/content'
+      }
     }
   },
 
@@ -48,26 +53,20 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     'shadcn-nuxt',
     '@vite-pwa/nuxt',
-    '@nuxtjs/mdc',
-    '@nuxtjs/supabase'
+    '@nuxtjs/supabase',
+    '@nuxt/content'
   ],
+
+  content: {
+    experimental: {
+      clientDB: true
+    }
+  },
 
   supabase: {
     redirect: false,
   },
 
-  mdc: {
-    highlight: {
-      theme: 'github-dark',
-      langs: ['sql', 'typescript', 'javascript', 'vue', 'html', 'css', 'bash', 'json']
-    },
-    components: {
-      prose: true,
-      allowedElements: {
-        script: false
-      }
-    }
-  },
   googleFonts: {
     // @ts-ignore
     families: {

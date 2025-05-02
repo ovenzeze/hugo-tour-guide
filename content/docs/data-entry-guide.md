@@ -1,28 +1,11 @@
-<div align="center">
-<!-- <img src="https://hugo.isclay.com/images/icons/favicons/favicon-32x32.png" alt="Hugo Tour Guide" width=""/> -->
-<h1>Data Entry Guide for Museums, Galleries and Objects</h1>
-
-<div align="center">
-Author: Zhen@Hugo<br>
-Last Updated: 2024-05-02
-</div>
-</div>
-
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Data Models and Relationships](#data-models-and-relationships)
-- [Data Entry Process](#data-entry-process)
- - [Museum Entry](#museum-entry)
- - [Gallery Entry](#gallery-entry)
- - [Object Entry](#object-entry)
- - [Persona Creation](#persona-creation)
- - [Guide Text Creation](#guide-text-creation)
-- [Field Descriptions](#field-descriptions)
-- [Validation Rules](#validation-rules)
-- [Best Practices](#best-practices)
-- [Common Issues](#common-issues)
+---
+title: Data Entry Guide for Museums, Galleries and Objects
+description: Comprehensive guide to entering and managing museum data in the Hugo Tour Guide system
+author: Zhen@Hugo
+date: 2024-05-02
+updatedAt: 2024-05-15
+tags: ["data-entry", "museums", "galleries", "objects", "guide"]
+---
 
 ## Overview
 

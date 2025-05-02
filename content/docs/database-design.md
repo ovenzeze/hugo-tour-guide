@@ -1,30 +1,12 @@
-<div align="center">
-<!-- <img src="https://hugo.isclay.com/images/icons/favicons/favicon-32x32.png" alt="Hugo Tour Guide" width=""/> -->
-<h1>Database Design Documentation</h1>
+---
+title: Database Design Documentation
+description: Detailed documentation of the database schema for Hugo Tour Guide
+author: Zhen Zhang@Hugo
+date: 2024-05-02
+updatedAt: 2024-05-15
+tags: ["database", "schema", "design", "supabase"]
+---
 
-<div align="center">
-Author: Zhen@Hugo<br>
-Last Updated: 2024-05-02
-</div>
-</div>
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Entity Relationship Diagram](#entity-relationship-diagram)
-- [Database Tables](#database-tables)
-  - [museums](#museums)
-  - [galleries](#galleries)
-  - [objects](#objects)
-  - [personas](#personas)
-  - [guide_texts](#guide_texts)
-  - [guide_audios](#guide_audios)
-- [Constraints and Indices](#constraints-and-indices)
-- [Database Triggers](#database-triggers)
-- [Schema Evolution](#schema-evolution)
-- [Performance Considerations](#performance-considerations)
-
-## Overview
 
 Hugo Tour Guide uses a PostgreSQL database hosted on Supabase to store all application data. The schema is designed around a hierarchical model where museums contain galleries, which contain objects. Each entity (museum, gallery, or object) can have multiple guide texts and associated audio recordings.
 
@@ -252,36 +234,55 @@ FOR EACH ROW
 EXECUTE FUNCTION update_latest_version();
 ```
 
-The `update_latest_version()` function ensures only one record per entity-persona-language combination is marked as the latest version.
+The `update_latest_version()` function:
+
+```sql
+CREATE OR REPLACE FUNCTION update_latest_version()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- If this is a new version being set as latest
+    IF NEW.is_latest_version = true THEN
+        -- Set all other versions of this content to not latest
+        EXECUTE format('UPDATE %I SET is_latest_version = false 
+                       WHERE %I = $1 
+                       AND %I = $2 
+                       AND %I = $3 
+                       AND %I = $4
+                       AND id != $5',
+                       TG_TABLE_NAME,
+                       TG_ARGV[0], -- entity type column (museum_id, gallery_id, or object_id)
+                       'persona_id',
+                       'language',
+                       'version',
+                       NEW.entity_id, -- The specific entity ID value
+                       NEW.persona_id,
+                       NEW.language,
+                       NEW.version,
+                       NEW.id);
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
 
 ## Schema Evolution
 
-The database schema has evolved over time:
+The database schema is designed to evolve with the application. When schema changes are needed:
 
-1. **Initial Design**: Basic museum, object, and audio guide structures
-2. **Gallery Addition**: Introduced galleries as an intermediate layer
-3. **Personas**: Added persona system for different guide voices and styles
-4. **Versioning**: Added version tracking for both text and audio content
-5. **Metadata Enrichment**: Added JSONB fields for flexible metadata storage
-6. **Table Renaming**: Renamed `audio_guides` to `guide_audios` for consistency
-
-When making schema changes, consider:
-- Backwards compatibility with existing applications
-- Data migration for existing records
-- Update of related triggers and functions
-- Performance impact of schema changes
+1. Create migration scripts for both forward and rollback changes
+2. Use transaction blocks to ensure atomicity of migrations
+3. Test migrations on staging environment before production
+4. Consider data migration needs when schema changes would affect existing data
 
 ## Performance Considerations
 
-The database design addresses performance through:
+Several performance optimizations have been implemented:
 
-1. **Appropriate Indices**: On commonly queried fields and join columns
-2. **Denormalization**: Strategic duplication of data (e.g., storing `language` in both `guide_texts` and `guide_audios`)
-3. **JSONB for Flexible Data**: Using JSONB fields for data with variable structure
-4. **Data Partitioning**: Option to partition `guide_audios` by language or museum for very large datasets
+1. **Appropriate Indices**: On most frequently queried columns and combinations
+2. **Denormalization**: Where beneficial for read performance
+3. **JSONB for Flexibility**: Used for structured data that may vary (e.g., opening_hours, metadata)
+4. **Array Types**: Used for tags and other list data to support efficient searches
+5. **Partitioning Strategy**: For tables expected to grow very large (e.g., guide_audios)
 
-For large installations, consider:
-- Implementing connection pooling
-- Using read replicas for analytics or reporting
-- Implementing query caching for frequently accessed data
-- Regular VACUUM and index maintenance
+Performance monitoring and query tuning are ongoing processes, with regular reviews of slow queries identified through database monitoring tools.
