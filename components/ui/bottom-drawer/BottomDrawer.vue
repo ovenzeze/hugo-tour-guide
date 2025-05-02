@@ -84,4 +84,4 @@ const { isPwa } = usePwa()
 .drawer-content {
   padding-bottom: 1rem; /* Keep the fallback as default */
 }
-</style>
+</style> 

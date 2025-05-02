@@ -49,12 +49,23 @@ export default defineNuxtConfig({
     'shadcn-nuxt',
     '@vite-pwa/nuxt',
     '@nuxtjs/mdc',
+    '@nuxtjs/supabase'
   ],
 
+  supabase: {
+    redirect: false,
+  },
 
   mdc: {
     highlight: {
-      theme: 'github-dark'
+      theme: 'github-dark',
+      langs: ['sql', 'typescript', 'javascript', 'vue', 'html', 'css', 'bash', 'json']
+    },
+    components: {
+      prose: true,
+      allowedElements: {
+        script: false
+      }
     }
   },
   googleFonts: {
@@ -86,6 +97,10 @@ export default defineNuxtConfig({
         { rel: 'manifest', href: '/manifest.json' },
         { rel: 'mask-icon', href: '/images/icons/favicons/safari-pinned-tab.svg', color: '#5bbad5' }
       ]
+    },
+    layoutTransition: {
+      name: 'page',
+      mode: 'out-in'
     }
   },
   plugins: [],
@@ -146,6 +161,12 @@ export default defineNuxtConfig({
       navigateFallback: '/',
       navigateFallbackAllowlist: [/.*\/$/],
       type: 'module'
+    },
+    redirectOptions: {
+      login: false,
+      exclude: ['/**'],
+      include: [],
+      saveRedirectToCookie: false,
     },
   }
 })
