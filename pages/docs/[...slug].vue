@@ -3,7 +3,7 @@
     <div class="flex flex-col lg:flex-row lg:gap-10">
 
       <!-- Table of Contents - Desktop Sidebar (Hidden on small screens) -->
-      <aside class="hidden lg:block lg:w-72 sticky top-20 self-start h-[calc(100dvh-10rem)] overflow-hidden flex flex-col pr-4">
+      <aside class="lg:block lg:w-72 sticky top-20 self-start h-[calc(100dvh-10rem)] overflow-hidden flex flex-col pr-4">
         <div class="bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-200 dark:border-gray-700 h-full flex flex-col">
           <!-- 固定头部 -->
           <div class="p-4 border-b border-gray-200 dark:border-gray-700">

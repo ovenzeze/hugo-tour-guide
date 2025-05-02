@@ -29,7 +29,6 @@
     "get-audio-duration": "^4.0.1",
     "lucide-vue-next": "^0.503.0",
     "pg": "^8.15.6",
-    "phosphor-vue": "^1.4.2",
     "pinia": "^3.0.2",
     "reka-ui": "^2.2.0",
     "shadcn-nuxt": "^2.0.1",

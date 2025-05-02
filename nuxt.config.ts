@@ -108,6 +108,7 @@ export default defineNuxtConfig({
     prefix: '',
     componentDir: './components/ui'
   },
+  // @ts-ignore - Ignore TS error as vite-pwa module should handle this config key
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
@@ -148,24 +149,20 @@ export default defineNuxtConfig({
     workbox: {
       navigateFallback: '/',
       globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
-      maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8MB，足够缓存最大的文件 (6.98MB)
-    },
-    client: {
-      installPrompt: true,
-      periodicSyncForUpdates: 20
+      globIgnores: ['**/node_modules/**/*', '**/_payload.json'],
+      maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8MB
     },
     devOptions: {
-      enabled: true,
-      suppressWarnings: true,
-      navigateFallback: '/',
-      navigateFallbackAllowlist: [/.*\/$/],
-      type: 'module'
+      enabled: false, // 开发环境禁用 PWA
+      suppressWarnings: true
     },
-    redirectOptions: {
-      login: false,
-      exclude: ['/**'],
-      include: [],
-      saveRedirectToCookie: false,
-    },
+    strategies: 'generateSW',
+    // 完全禁用会导致错误的功能
+    includeAssets: [],
+    registerWebManifestInRouteRules: false,
+    client: {
+      registerPlugin: false, // 不注册客户端插件
+      installPrompt: false // 禁用安装提示
+    }
   }
 })
