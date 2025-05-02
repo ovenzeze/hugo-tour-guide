@@ -59,7 +59,13 @@ export default defineNuxtConfig({
 
   content: {
     experimental: {
-      clientDB: true
+      clientDB: false
+    },
+    documentDriven: false,
+    storage: {
+      fs: {
+        driver: 'fs'
+      }
     }
   },
 

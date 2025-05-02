@@ -1,0 +1,9 @@
+{
+  "buildCommand": "pnpm build:vercel",
+  "outputDirectory": ".output/public",
+  "devCommand": "pnpm dev",
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "env": {
+    "NUXT_CONTENT_EXPERIMENTAL_CLIENTDB": "false"
+  }
+} 
