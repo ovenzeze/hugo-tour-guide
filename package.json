@@ -5,11 +5,20 @@
   "scripts": {
     "build": "nuxt build",
     "build:vercel": "NITRO_PRESET=vercel NODE_OPTIONS='--max-old-space-size=4096' nuxt build",
+    "build:test": "pnpm approve-builds && pnpm build:vercel",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "nuxi typecheck"
+  },
+  "pnpm": {
+    "pnpmfile": "./pnpmfile.cjs",
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "@parcel/watcher",
+      "sharp"
+    ]
   },
   "dependencies": {
     "@iconify-json/ph": "^1.2.2",

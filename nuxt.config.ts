@@ -66,7 +66,10 @@ export default defineNuxtConfig({
       fs: {
         driver: 'fs'
       }
-    }
+    },
+    ignores: [
+      'better-sqlite3'
+    ]
   },
 
   supabase: {
