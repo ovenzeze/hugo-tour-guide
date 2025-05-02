@@ -1,0 +1,9 @@
+{
+  "buildCommand": "pnpm run build:vercel",
+  "installCommand": "pnpm install",
+  "framework": "nuxt",
+  "outputDirectory": ".output/public",
+  "includeFiles": [
+    "docs/**"
+  ]
+} 
