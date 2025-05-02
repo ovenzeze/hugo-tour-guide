@@ -1,16 +1,18 @@
 <template>
-  <NuxtLayout>
-    <NuxtPage />
-  </NuxtLayout>
-  <Toaster 
-    position="top-right" 
-    closeButton 
-    richColors
-    :toastOptions="{
-      duration: 4000
-    }"
-    class="toaster-safe-area"
-  />
+  <div>
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
+    <Toaster 
+      position="top-right" 
+      closeButton 
+      richColors
+      :toastOptions="{
+        duration: 4000
+      }"
+      class="toaster-safe-area"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">

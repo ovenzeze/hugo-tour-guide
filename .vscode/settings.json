@@ -1,11 +1,33 @@
 {
-    "cSpell.words": [
-        "Noto",
-        "Nuxt",
-        "nuxtjs",
-        "shadcn"
-    ],
-    "typescript.tsdk": "node_modules/typescript/lib",
-    "IDX.aI.enableInlineCompletion": true,
-    "IDX.aI.enableCodebaseIndexing": true
+  "IDX.aI.enableCodebaseIndexing": true,
+  "IDX.aI.enableInlineCompletion": true,
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  },
+  "cSpell.words": [
+    "Noto",
+    "Nuxt",
+    "nuxtjs",
+    "shadcn"
+  ],
+  "deno.enablePaths": [
+    "supabase/functions"
+  ],
+  "deno.lint": true,
+  "deno.unstable": [
+    "bare-node-builtins",
+    "byonm",
+    "sloppy-imports",
+    "unsafe-proto",
+    "webgpu",
+    "broadcast-channel",
+    "worker-options",
+    "cron",
+    "kv",
+    "ffi",
+    "fs",
+    "http",
+    "net"
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib"
 }

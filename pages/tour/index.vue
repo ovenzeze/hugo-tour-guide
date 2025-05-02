@@ -66,7 +66,7 @@ import TourToolbar from '~/components/TourToolbar.vue'
 
 // 页面元数据
 definePageMeta({
-  layout: 'fullscreen'
+  layout: 'fullscreen-map'
 })
 
 // 设置页面标题和元数据

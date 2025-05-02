@@ -14,7 +14,7 @@ export default defineNuxtConfig({
       elevenlabsDefaultModelId: process.env.ELEVENLABS_DEFAULT_MODEL_ID || 'eleven_multilingual_v2'
     }
   },
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   css: ['~/assets/css/tailwind.css'],
 
 
@@ -58,7 +58,14 @@ export default defineNuxtConfig({
 
   mdc: {
     highlight: {
-      theme: 'github-dark'
+      theme: 'github-dark',
+      langs: ['sql', 'typescript', 'javascript', 'vue', 'html', 'css', 'bash', 'json']
+    },
+    components: {
+      prose: true,
+      allowedElements: {
+        script: false
+      }
     }
   },
   googleFonts: {
