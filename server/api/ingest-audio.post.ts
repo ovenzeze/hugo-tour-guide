@@ -1,7 +1,8 @@
 import { serverSupabaseClient } from '#supabase/server'
 import type { Database } from '~/types/supabase'
 import type { H3Event } from 'h3'
-import { readMultipartFormData, MultiPartData } from 'h3'
+import { readMultipartFormData } from 'h3'
+import type { MultiPartData } from 'h3'
 
 // Define the expected structure for guide_audios insert
 // Assuming your table is named 'guide_audios'

@@ -179,7 +179,7 @@
             <pre>Listening: {{ voiceNavState?.isListening?.value }}</pre>
             <pre>Speaking: {{ voiceNavState?.isSpeaking?.value }}</pre>
             <pre>Transcript: {{ voiceNavState?.transcript?.value || 'N/A' }}</pre>
-            <pre>Recognition Error: {{ voiceNavState?.recognitionError?.value || 'N/A' }}</pre>
+            <pre>Recognition Status: {{ voiceNavState?.isListening?.value ? 'Active' : 'Inactive' }}</pre>
           </div>
         </div>
       </Transition>

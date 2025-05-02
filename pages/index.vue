@@ -150,12 +150,12 @@ interface TourItem {
 }
 
 // 使用 useAsyncData 加载数据
-const { data: items, pending, error } = await useAsyncData<TourItem[]>(
+const { data: items, pending, error } = await useAsyncData(
   'tour-items',
   async () => {
     try {
-      const data = await $fetch<TourItem[]>('/data/mock-data/tour-items.json')
-      return data
+      const data = await $fetch('/data/mock-data/tour-items.json')
+      return data as TourItem[]
     } catch (e) {
       console.error('Error fetching tour items with useAsyncData:', e)
       return []

@@ -81,7 +81,4 @@ export namespace Voice {
     name: string;
     description?: string;
   }
-}
-
-// 导出整个命名空间（作为类型），供其他模块使用
-export type { Voice }; 
+} 

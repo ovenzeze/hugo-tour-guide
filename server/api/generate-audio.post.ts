@@ -13,8 +13,19 @@ type GuideTextRow = Database['public']['Tables']['guide_texts']['Row']
 type PersonaRow = Database['public']['Tables']['personas']['Row']
 
 // Combine fetched data for clarity
-interface TextWithPersona extends GuideTextRow {
-    personas: PersonaRow | null // Assuming a relationship or join fetches this
+interface TextWithPersona {
+    guide_text_id: number;
+    transcript: string;
+    language?: string;
+    museum_id?: number | null;
+    gallery_id?: number | null;
+    object_id?: number | null;
+    persona_id: number;
+    personas: {
+        persona_id: number;
+        name: string;
+        voice_model_identifier?: string | null;
+    };
 }
 
 export default defineEventHandler(async (event: H3Event) => {
@@ -36,33 +47,40 @@ export default defineEventHandler(async (event: H3Event) => {
         console.log(`Processing request for guide_text_id: ${guideTextId}`);
 
         // 2. Fetch Guide Text and Associated Persona
-        // Note: Adjust the query based on your actual relationship setup.
-        // This example assumes you might fetch persona separately or have a view/join.
-        // Fetching text first:
-        const { data: textData, error: textError } = await client
+        // 使用 PostgreSQL 查询联接
+        const { data: rawData, error: textError } = await client
             .from('guide_texts')
             .select(`
-                *,
-                personas (*)
-            `) // Fetch text and related persona
+                guide_text_id,
+                transcript,
+                language,
+                museum_id,
+                gallery_id,
+                object_id,
+                persona_id,
+                personas:personas (
+                    persona_id,
+                    name,
+                    voice_model_identifier
+                )
+            `)
             .eq('guide_text_id', guideTextId)
-            .returns<TextWithPersona | null>() // Ensure correct typing for join
-            .maybeSingle();
+            .single();
 
         if (textError) {
             console.error('Error fetching guide text/persona:', textError);
             throw createError({ statusCode: 500, statusMessage: `Database error fetching data: ${textError.message}` });
         }
-        if (!textData) {
+
+        if (!rawData) {
             throw createError({ statusCode: 404, statusMessage: `Not Found: Guide text with id ${guideTextId} not found.` });
         }
-        if (!textData.personas) {
-             throw createError({ statusCode: 404, statusMessage: `Not Found: Persona associated with guide text id ${guideTextId} not found.` });
-        }
-        const guideTextRecord = textData;
-        const personaRecord = textData.personas;
-        console.log(`Found text: "${guideTextRecord.transcript.substring(0, 30)}...", Persona: ${personaRecord.name}`);
 
+        // 明确解构文本数据和角色数据
+        const { personas, ...textData } = rawData;
+        const personaRecord = personas as any; // 临时使用 any 类型
+
+        console.log(`Found text: "${textData.transcript.substring(0, 30)}...", Persona: ${personaRecord.name}`);
 
         // 3. Determine ElevenLabs Parameters
         const elevenlabsApiKey = config.elevenlabsApiKey;
@@ -72,7 +90,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
         const voiceId = body.voice_id || personaRecord.voice_model_identifier; // Use request override or persona default
         if (!voiceId) {
-             throw createError({ statusCode: 400, statusMessage: 'Bad Request: Voice ID is required either in request body or set on the Persona.' });
+            throw createError({ statusCode: 400, statusMessage: 'Bad Request: Voice ID is required either in request body or set on the Persona.' });
         }
         // Use request model override, then config default, then hardcoded default
         const modelId = body.model_id || config.public.elevenlabsDefaultModelId || 'eleven_multilingual_v2';
@@ -86,7 +104,7 @@ export default defineEventHandler(async (event: H3Event) => {
         };
 
         const elevenlabsPayload = {
-            text: guideTextRecord.transcript,
+            text: textData.transcript,
             model_id: modelId,
             voice_settings: voiceSettings,
         };
@@ -95,149 +113,44 @@ export default defineEventHandler(async (event: H3Event) => {
         console.log(`Calling ElevenLabs API: ${elevenlabsApiUrl} with model ${modelId}`);
 
         // 4. Call ElevenLabs API
-        let audioBuffer: Buffer;
-        try {
-            const response: Blob = await $fetch(elevenlabsApiUrl, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'audio/mpeg', // Request MP3 audio stream
-                    'Content-Type': 'application/json',
-                    'xi-api-key': elevenlabsApiKey,
-                },
-                query: {
-                    output_format: outputFormat,
-                    optimize_streaming_latency: 0 // Optional: Adjust latency optimization
-                },
-                body: JSON.stringify(elevenlabsPayload),
-                responseType: 'blob' // Important: Tell $fetch to expect a Blob
-            });
-             audioBuffer = Buffer.from(await response.arrayBuffer()); // Convert Blob to Buffer
-             console.log(`Received audio data, size: ${audioBuffer.length} bytes`);
-        } catch (elevenlabsError: any) {
-            console.error('ElevenLabs API Error:', elevenlabsError);
-            const statusCode = elevenlabsError.response?.status || 500;
-            const statusMessage = elevenlabsError.data?.detail?.message || elevenlabsError.message || 'Unknown ElevenLabs API error';
-            throw createError({ statusCode: statusCode, statusMessage: `ElevenLabs TTS failed: ${statusMessage}` });
+        const response = await $fetch(elevenlabsApiUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${elevenlabsApiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(elevenlabsPayload)
+        });
+
+        if (response.error) {
+            console.error('Error calling ElevenLabs API:', response.error);
+            throw createError({ statusCode: 500, statusMessage: `API error: ${response.error.message}` });
         }
 
+        const audioData = await response.arrayBuffer();
+        const audioDuration = getAudioDurationInSeconds(audioData);
+        const audioFileName = `guide_audio_${guideTextId}_${Date.now()}.${outputFormat.split('_')[0]}`;
+        const audioFilePath = join(tmpdir(), audioFileName);
 
-        // 5. Upload Audio to Supabase Storage
-        const fileExt = outputFormat.split('_')[0] || 'mp3'; // Extract format from output_format
-        const audioVersion = body.audio_version || 1; // Use provided version or default to 1
-        const uniqueFileName = `${guideTextRecord.guide_text_id}_p${personaRecord.persona_id}_v${audioVersion}_${Date.now()}.${fileExt}`;
-        const filePath = `public/${personaRecord.persona_id}/${uniqueFileName}`; // Organize by persona
+        writeFileSync(audioFilePath, Buffer.from(audioData));
 
-        console.log(`Uploading audio buffer to bucket '${storageBucketName}' at path '${filePath}'`);
-        const { data: uploadData, error: uploadError } = await client.storage
-            .from(storageBucketName)
-            .upload(filePath, audioBuffer, {
-                contentType: `audio/${fileExt}`, // Set appropriate content type
-                upsert: false
-            });
+        uploadedFilePath = audioFilePath;
 
-        if (uploadError) {
-            console.error('Supabase Storage Upload Error:', uploadError);
-            throw createError({ statusCode: 500, statusMessage: `Storage upload failed: ${uploadError.message}` });
-        }
-        if (!uploadData || !uploadData.path) {
-             throw createError({ statusCode: 500, statusMessage: 'Storage upload succeeded but did not return a valid path.' });
-        }
-        uploadedFilePath = uploadData.path; // Store for potential cleanup and DB insert
-        console.log('Audio uploaded successfully. Path:', uploadedFilePath);
-
-        // 5.1 计算音频时长
-        let durationSeconds = null;
-        try {
-            // 将音频缓冲区写入临时文件
-            const tempFilePath = join(tmpdir(), `temp-audio-${Date.now()}.${fileExt}`);
-            writeFileSync(tempFilePath, audioBuffer);
-            
-            // 计算音频时长
-            durationSeconds = Math.round(await getAudioDurationInSeconds(tempFilePath));
-            console.log(`计算的音频时长: ${durationSeconds} 秒`);
-            
-            // 清理临时文件
-            unlinkSync(tempFilePath);
-        } catch (durationError) {
-            console.warn(`无法计算音频时长: ${durationError.message}`);
-            // 继续执行，不因为时长计算失败而中断整个流程
-        }
-
-        // 6. Insert Metadata into Database (guide_audios table)
-        const insertPayload: GuideAudioInsert = {
-            guide_text_id: guideTextRecord.guide_text_id,
-            persona_id: personaRecord.persona_id,
-            language: guideTextRecord.language,
-            museum_id: guideTextRecord.museum_id,
-            gallery_id: guideTextRecord.gallery_id,
-            object_id: guideTextRecord.object_id,
-            audio_url: uploadedFilePath, // The path returned by storage.upload
-            version: audioVersion,
-            duration_seconds: durationSeconds, // 使用计算的时长
-            metadata: { // Store generation parameters
-                elevenlabs: {
-                    voiceId,
-                    modelId,
-                    outputFormat,
-                    voiceSettings,
-                    requested_stability: body.stability, // Record what was requested
-                    requested_similarity_boost: body.similarity_boost,
-                    requested_style: body.style,
-                    requested_use_speaker_boost: body.use_speaker_boost,
-                 }
-            } as any,
-            is_latest_version: true,
-            is_active: true
-        };
-
-        console.log('Inserting record into guide_audios:', insertPayload);
-        const { data: insertData, error: insertError } = await client
-            .from('guide_audios') // 使用正确的表名 guide_audios 而不是 audio_guides
-            .insert(insertPayload)
-            .select()
-            .single();
-
-        if (insertError) {
-            console.error('Supabase Insert Error (guide_audios):', insertError);
-            // 尝试清理已上传的文件
-            console.warn(`DB insert failed, attempting to remove uploaded file: ${uploadedFilePath}`);
-            await client.storage.from(storageBucketName).remove([uploadedFilePath]); 
-            throw createError({ statusCode: 500, statusMessage: `Database insert failed into guide_audios: ${insertError.message}` });
-        }
-
-        console.log('Successfully inserted guide_audios record:', insertData);
-
-        // 7. Return Success Response
-        event.node.res.statusCode = 201; // 201 Created
         return {
-            success: true,
-            message: 'Audio generated, uploaded, and record created successfully.',
-            audioRecord: insertData
+            audio_file_path: audioFilePath,
+            audio_duration: audioDuration,
+            audio_file_name: audioFileName,
+            output_format: outputFormat
         };
-
-    } catch (err: any) {
-        // Catch errors thrown by createError or other unexpected issues
-        console.error('Error in /api/generate-audio:', err);
-
-        // Attempt cleanup if upload finished but something else failed later
-        if (uploadedFilePath && !(err.statusCode === 500 && err.message?.includes('Database insert failed'))) { // Avoid double cleanup attempt
-             console.warn(`Attempting to clean up potentially orphaned file due to later error: ${uploadedFilePath}`);
-            try {
-                 await client.storage.from(storageBucketName).remove([uploadedFilePath]);
-                 console.log(`Cleanup successful for ${uploadedFilePath}`);
-            } catch (cleanupError: any) {
-                 console.error(`Failed to cleanup orphaned file ${uploadedFilePath}:`, cleanupError.message);
-            }
-        }
-
-        if (err.statusCode) {
-            // Re-throw errors created by createError
-            throw err;
-        } else {
-            throw createError({
-                statusCode: 500,
-                statusMessage: `Internal Server Error generating audio: ${err.message}`
-            });
+    } catch (error: any) {
+        console.error('Error processing request:', error);
+        throw createError({ 
+            statusCode: 500, 
+            statusMessage: `Internal Server Error: ${error?.message || 'Unknown error'}` 
+        });
+    } finally {
+        if (uploadedFilePath && !uploadedFilePath.includes(tmpdir())) {
+            unlinkSync(uploadedFilePath);
         }
     }
-}); 
+});

@@ -28,13 +28,14 @@ export default defineEventHandler(async (event: H3Event) => {
 
   // --- API Call ---
   try {
-    const response = await $fetch< { voices: ElevenLabsVoice[] } >(apiEndpoint, {
+    const fetchOptions = {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
         'xi-api-key': apiKey,
-      },
-    });
+      }
+    }
+    const response = await $fetch<{ voices: ElevenLabsVoice[] }>(apiEndpoint, fetchOptions);
 
     // --- Response Handling ---
     if (!response || !response.voices) {

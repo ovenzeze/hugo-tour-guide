@@ -157,10 +157,10 @@ export function useVoiceNavigation() {
       await generateTTS(text, {
           ...options,
           voiceSettings: options.voiceSettings ? {
-              stability: options.voiceSettings.stability, // Already ensured to be number
-              similarity_boost: options.voiceSettings.similarity_boost, // Already ensured to be number
-              style: options.voiceSettings.style, // Keep optional
-              use_speaker_boost: options.voiceSettings.use_speaker_boost // Keep optional
+              stability: Number(options.voiceSettings.stability || 0.5), // 确保是数字类型且有默认值
+              similarity_boost: Number(options.voiceSettings.similarity_boost || 0.75), // 确保是数字类型且有默认值
+              style: options.voiceSettings.style, // 保持可选
+              use_speaker_boost: options.voiceSettings.use_speaker_boost // 保持可选
           } : undefined
       })
       console.log("generateTTS call completed.");
@@ -200,7 +200,6 @@ export function useVoiceNavigation() {
     isListening: isRecognitionListening, // Rename state
     transcript: recognitionTranscript,
     interimTranscript,
-    recognitionError,
     startListening: startRecognition, // Rename functions
     stopListening: stopRecognition,
     // executeCommand, // Not directly used here
@@ -274,7 +273,6 @@ export function useVoiceNavigation() {
     isListening: isRecognitionListening, // Use the renamed state
     transcript: recognitionTranscript,
     interimTranscript,
-    recognitionError,
     startListening: startRecognition, // Use the renamed function
     stopListening: stopRecognition,
     // userLanguage, // Expose if needed elsewhere
