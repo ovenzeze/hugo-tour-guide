@@ -37,7 +37,20 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    preset: 'vercel'
+    preset: 'vercel',
+    publicAssets: [
+      {
+        baseURL: 'docs',
+        dir: 'docs',
+        maxAge: 60 * 60 * 24 * 365 // 1 year
+      }
+    ],
+    serverAssets: [
+      {
+        baseName: 'docs',
+        dir: './docs'
+      }
+    ]
   },
 
   modules: [

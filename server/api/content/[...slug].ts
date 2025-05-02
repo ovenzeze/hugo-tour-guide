@@ -1,7 +1,6 @@
-import { readFile } from 'fs/promises'
-import { resolve } from 'path'
-import { defineEventHandler, createError } from 'h3'
+import { defineEventHandler, createError, getRouterParam } from 'h3'
 import { parseMarkdown } from '@nuxtjs/mdc/runtime'
+import { useStorage } from '#imports'
 
 /**
  * API路由处理文档内容
@@ -13,12 +12,15 @@ export default defineEventHandler(async (event) => {
   const path = Array.isArray(slug) ? slug.join('/') : slug
 
   try {
-    // 尝试从docs目录读取文件
-    const filePath = resolve(process.cwd(), 'docs', `${path}.md`)
-    const content = await readFile(filePath, 'utf-8')
+    // 从serverAssets中读取文件内容
+    const content = await useStorage('docs').getItem(`${path}.md`)
+    
+    if (!content) {
+      throw new Error(`File not found: ${path}.md`)
+    }
     
     // 解析Markdown内容，启用TOC生成
-    const parsedContent = await parseMarkdown(content, {
+    const parsedContent = await parseMarkdown(content as string, {
       toc: { 
         depth: 4,         // 包含h1到h4级别标题
         searchDepth: 4,    // 搜索深度
