@@ -12,6 +12,113 @@ type GuideAudioInsert = Database['public']['Tables']['guide_audios']['Insert']
 // Define the structure we expect for the guide_texts lookup
 type GuideTextRow = Database['public']['Tables']['guide_texts']['Row']
 
+// 添加 OpenAPI 元数据
+defineRouteMeta({
+  openAPI: {
+    summary: '上传音频文件',
+    description: '上传音频文件并关联到指定的导览文本，存储到Supabase存储桶并创建数据库记录',
+    tags: ['音频处理'],
+    requestBody: {
+      description: '多部分表单数据，包含音频文件和元数据',
+      required: true,
+      content: {
+        'multipart/form-data': {
+          schema: {
+            type: 'object',
+            required: ['audioFile', 'guide_text_id'],
+            properties: {
+              audioFile: {
+                type: 'string',
+                format: 'binary',
+                description: '要上传的音频文件'
+              },
+              guide_text_id: {
+                type: 'string',
+                description: '关联的导览文本ID'
+              },
+              audio_version: {
+                type: 'string',
+                description: '音频版本号，默认为1'
+              },
+              duration_seconds: {
+                type: 'string',
+                description: '音频时长（秒）'
+              },
+              generation_metadata: {
+                type: 'string',
+                format: 'json',
+                description: '生成音频时的元数据，JSON格式'
+              }
+            }
+          }
+        }
+      }
+    },
+    responses: {
+      '201': {
+        description: '音频文件上传成功',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean', example: true },
+                message: { type: 'string', example: 'Audio file uploaded and record created successfully.' },
+                audioRecord: {
+                  type: 'object',
+                  description: '创建的音频记录详情'
+                }
+              }
+            }
+          }
+        }
+      },
+      '400': {
+        description: '请求参数错误',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                statusCode: { type: 'number', example: 400 },
+                statusMessage: { type: 'string', example: 'Bad Request: Missing form data.' }
+              }
+            }
+          }
+        }
+      },
+      '404': {
+        description: '导览文本未找到',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                statusCode: { type: 'number', example: 404 },
+                statusMessage: { type: 'string', example: 'Not Found: Guide text with id 123 not found.' }
+              }
+            }
+          }
+        }
+      },
+      '500': {
+        description: '服务器错误',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                statusCode: { type: 'number', example: 500 },
+                statusMessage: { type: 'string', example: 'Internal Server Error processing audio.' }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+})
+
 // Helper function to find the file part
 function findFile(parts: MultiPartData[] | undefined): MultiPartData | undefined {
     return parts?.find(part => part.name === 'audioFile' && part.filename && part.type?.startsWith('audio/'));
