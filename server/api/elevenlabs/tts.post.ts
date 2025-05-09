@@ -2,6 +2,54 @@ import { defineEventHandler, readBody, createError, sendError } from 'h3'
 import { useRuntimeConfig } from '#imports'
 // 现在 fetchElevenLabsAPI 应该通过 server/utils/ 自动导入
 
+// Add OpenAPI metadata using defineRouteMeta
+defineRouteMeta({
+  openAPI: {
+    summary: 'Generate Speech from Text (TTS)',
+    description: 'Generates speech audio from the provided text using a specified ElevenLabs voice and model.',
+    tags: ['ElevenLabs'],
+    requestBody: {
+      description: 'Parameters for speech generation.',
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['text'],
+            properties: {
+              text: { type: 'string', description: 'The text to synthesize.' },
+              voiceId: { type: 'string', description: 'The ID of the voice to use. Defaults to ELEVENLABS_DEFAULT_VOICE_ID.', nullable: true },
+              modelId: { type: 'string', description: 'The ID of the model to use. Defaults to ELEVENLABS_DEFAULT_MODEL_ID.', nullable: true },
+              voiceSettings: {
+                type: 'object',
+                description: 'Optional voice settings (e.g., stability, similarity_boost).',
+                additionalProperties: true, // Allows any properties
+                nullable: true
+              }
+            }
+          }
+        }
+      }
+    },
+    responses: {
+      '200': {
+        description: 'Successfully generated audio stream.',
+        content: {
+          'audio/mpeg': {
+            schema: {
+              type: 'string',
+              format: 'binary' // Indicates binary audio data
+            }
+          }
+        }
+      },
+      '400': { description: 'Bad Request: Missing or invalid parameters (e.g., missing text).' },
+      '401': { description: 'Unauthorized: Invalid API Key.' },
+      '500': { description: 'Server Error: Failed during API call or processing.' }
+    }
+  }
+});
+
 export default defineEventHandler(async (event) => {
   try {
     // 获取运行时配置

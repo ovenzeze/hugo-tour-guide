@@ -28,6 +28,140 @@ interface TextWithPersona {
     };
 }
 
+// 添加 OpenAPI 元数据
+defineRouteMeta({
+  openAPI: {
+    summary: '生成音频文件',
+    description: '根据指定的导览文本ID生成语音音频文件，使用关联角色的声音模型',
+    tags: ['音频处理'],
+    requestBody: {
+      description: '音频生成参数',
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['guide_text_id'],
+            properties: {
+              guide_text_id: { 
+                type: 'integer', 
+                description: '要转换为语音的导览文本ID' 
+              },
+              voice_id: { 
+                type: 'string', 
+                description: '要使用的ElevenLabs声音ID，覆盖角色默认声音',
+                nullable: true
+              },
+              model_id: { 
+                type: 'string', 
+                description: '要使用的ElevenLabs模型ID，默认使用系统配置的模型',
+                nullable: true
+              },
+              output_format: { 
+                type: 'string', 
+                description: '输出音频格式，如mp3_44100_128',
+                default: 'mp3_44100_128'
+              },
+              stability: { 
+                type: 'number', 
+                description: '声音稳定性，范围0-1',
+                default: 0.5
+              },
+              similarity_boost: { 
+                type: 'number', 
+                description: '声音相似度提升，范围0-1',
+                default: 0.75
+              },
+              style: { 
+                type: 'number', 
+                description: '风格强度，范围0-1',
+                default: 0.0
+              },
+              use_speaker_boost: { 
+                type: 'boolean', 
+                description: '是否使用说话者增强',
+                default: true
+              }
+            }
+          }
+        }
+      }
+    },
+    responses: {
+      '200': {
+        description: '音频生成成功',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                audio_file_path: { 
+                  type: 'string', 
+                  description: '生成的音频文件临时路径'
+                },
+                audio_duration: { 
+                  type: 'number', 
+                  description: '音频时长（秒）'
+                },
+                audio_file_name: { 
+                  type: 'string', 
+                  description: '生成的音频文件名'
+                },
+                output_format: { 
+                  type: 'string', 
+                  description: '音频输出格式'
+                }
+              }
+            }
+          }
+        }
+      },
+      '400': {
+        description: '请求参数错误',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                statusCode: { type: 'number', example: 400 },
+                statusMessage: { type: 'string', example: 'Bad Request: Missing or invalid guide_text_id (must be a number).' }
+              }
+            }
+          }
+        }
+      },
+      '404': {
+        description: '导览文本未找到',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                statusCode: { type: 'number', example: 404 },
+                statusMessage: { type: 'string', example: 'Not Found: Guide text with id 123 not found.' }
+              }
+            }
+          }
+        }
+      },
+      '500': {
+        description: '服务器错误',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                statusCode: { type: 'number', example: 500 },
+                statusMessage: { type: 'string', example: 'Internal Server Error: Failed to generate audio.' }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+})
+
 export default defineEventHandler(async (event: H3Event) => {
     console.log('API Route /api/generate-audio called.');
 

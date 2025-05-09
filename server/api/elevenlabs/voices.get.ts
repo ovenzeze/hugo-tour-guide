@@ -1,5 +1,44 @@
 import type { H3Event } from 'h3'
 
+// Add OpenAPI metadata using defineRouteMeta
+defineRouteMeta({
+  openAPI: {
+    summary: 'Get Available ElevenLabs Voices',
+    description: 'Retrieves a list of available voices from the ElevenLabs API.',
+    tags: ['ElevenLabs'],
+    responses: {
+      '200': {
+        description: 'Successfully retrieved the list of voices.',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean', example: true },
+                voices: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', description: 'Voice ID' },
+                      name: { type: 'string', description: 'Voice name' },
+                      category: { type: 'string', description: 'Voice category (e.g., premade, cloned)', nullable: true },
+                      labels: { type: 'object', description: 'Key-value labels (e.g., accent, gender)', additionalProperties: { type: 'string' }, nullable: true },
+                      preview_url: { type: 'string', format: 'url', description: 'URL to preview the voice', nullable: true }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '401': { description: 'Unauthorized: Invalid API Key' },
+      '500': { description: 'Server Configuration Error or failed to fetch from ElevenLabs.' }
+    }
+  }
+});
+
 // Define the expected structure of a voice object from ElevenLabs API
 // Based on typical API responses, adjust if necessary
 interface ElevenLabsVoice {

@@ -1,6 +1,69 @@
 import { defineEventHandler, createError, getRouterParam } from 'h3'
-import { parseMarkdown } from '@nuxtjs/mdc/runtime'
 import { useStorage } from '#imports'
+
+// 添加 OpenAPI 元数据
+defineRouteMeta({
+  openAPI: {
+    summary: '获取文档内容',
+    description: '根据路径获取并解析Markdown文档内容，生成目录和代码高亮',
+    tags: ['doctest'],
+    parameters: [
+      {
+        name: 'slug',
+        in: 'path',
+        required: true,
+        description: '文档路径，可以包含多级目录',
+        schema: {
+          type: 'string'
+        }
+      }
+    ],
+    responses: {
+      '200': {
+        description: '成功获取并解析文档内容',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                body: {
+                  type: 'object',
+                  description: '解析后的文档内容'
+                },
+                toc: {
+                  type: 'array',
+                  description: '文档目录结构',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      text: { type: 'string' },
+                      depth: { type: 'integer' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '404': {
+        description: '文档未找到',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                statusCode: { type: 'number', example: 404 },
+                statusMessage: { type: 'string', example: 'Document not found: docs/guide' }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+})
 
 /**
  * API路由处理文档内容

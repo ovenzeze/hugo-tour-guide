@@ -10,8 +10,13 @@
           <h1 class="text-xl font-bold text-blue-600">AI Tour Guide</h1>
         </NuxtLink>
       </div>
-      
-      <Navigation class="hidden md:block" />
+
+      <!-- Desktop Navigation -->
+      <nav class="hidden md:flex space-x-6 items-center">
+        <NuxtLink to="/" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Home</NuxtLink>
+        <NuxtLink to="/team" class="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400">Team</NuxtLink>
+        <!-- Add other navigation links here if needed -->
+      </nav>
       
       <div class="flex items-center">
         <!-- User profile or login button -->

@@ -55,7 +55,10 @@ export default defineNuxtConfig({
         baseName: 'docs',
         dir: './docs'
       }
-    ]
+    ],
+    experimental: {
+      openAPI: true
+    }
   },
 
   modules: [
@@ -65,7 +68,6 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@nuxt/icon',
     'shadcn-nuxt',
-    '@vite-pwa/nuxt',
     '@nuxtjs/supabase',
     '@nuxt/content'
   ],
@@ -131,60 +133,60 @@ export default defineNuxtConfig({
     componentDir: './components/ui'
   },
   // @ts-ignore - Ignore TS error as vite-pwa module should handle this config key
-  pwa: {
-    registerType: 'autoUpdate',
-    manifest: {
-      name: 'Hugo Tour Guide',
-      short_name: 'HugoGuide',
-      description: 'Hugo Tour Guide App',
-      theme_color: '#ffffff',
-      background_color: '#ffffff',
-      display: 'standalone',
-      orientation: 'portrait',
-      lang: 'en',
-      start_url: '/?source=pwa',
-      icons: [
-        {
-          src: '/images/icons/favicons/android-chrome-192x192.png',
-          sizes: '192x192',
-          type: 'image/png'
-        },
-        {
-          src: '/images/icons/favicons/android-chrome-512x512.png',
-          sizes: '512x512',
-          type: 'image/png'
-        },
-        {
-          src: '/images/icons/favicons/apple-touch-icon.png',
-          sizes: '180x180',
-          type: 'image/png',
-          purpose: 'apple touch icon'
-        },
-        {
-          src: '/images/icons/favicons/maskable-icon.png',
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'maskable'
-        }
-      ]
-    },
-    workbox: {
-      navigateFallback: '/',
-      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
-      globIgnores: ['**/node_modules/**/*', '**/_payload.json'],
-      maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8MB
-    },
-    devOptions: {
-      enabled: false, // 开发环境禁用 PWA
-      suppressWarnings: true
-    },
-    strategies: 'generateSW',
-    // 完全禁用会导致错误的功能
-    includeAssets: [],
-    registerWebManifestInRouteRules: false,
-    client: {
-      registerPlugin: false, // 不注册客户端插件
-      installPrompt: false // 禁用安装提示
-    }
-  }
+  // pwa: {
+  //   registerType: 'autoUpdate',
+  //   manifest: {
+  //     name: 'Hugo Tour Guide',
+  //     short_name: 'HugoGuide',
+  //     description: 'Hugo Tour Guide App',
+  //     theme_color: '#ffffff',
+  //     background_color: '#ffffff',
+  //     display: 'standalone',
+  //     orientation: 'portrait',
+  //     lang: 'en',
+  //     start_url: '/?source=pwa',
+  //     icons: [
+  //       {
+  //         src: '/images/icons/favicons/android-chrome-192x192.png',
+  //         sizes: '192x192',
+  //         type: 'image/png'
+  //       },
+  //       {
+  //         src: '/images/icons/favicons/android-chrome-512x512.png',
+  //         sizes: '512x512',
+  //         type: 'image/png'
+  //       },
+  //       {
+  //         src: '/images/icons/favicons/apple-touch-icon.png',
+  //         sizes: '180x180',
+  //         type: 'image/png',
+  //         purpose: 'apple touch icon'
+  //       },
+  //       {
+  //         src: '/images/icons/favicons/maskable-icon.png',
+  //         sizes: '512x512',
+  //         type: 'image/png',
+  //         purpose: 'maskable'
+  //       }
+  //     ]
+  //   },
+  //   workbox: {
+  //     navigateFallback: '/',
+  //     globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+  //     globIgnores: ['**/node_modules/**/*', '**/_payload.json'],
+  //     maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8MB
+  //   },
+  //   devOptions: {
+  //     enabled: false, // 开发环境禁用 PWA
+  //     suppressWarnings: true
+  //   },
+  //   strategies: 'generateSW',
+  //   // 完全禁用会导致错误的功能
+  //   includeAssets: [],
+  //   registerWebManifestInRouteRules: false,
+  //   client: {
+  //     registerPlugin: false, // 不注册客户端插件
+  //     installPrompt: false // 禁用安装提示
+  //   }
+  // }
 })
